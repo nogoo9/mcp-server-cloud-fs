@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+*.local
+.claude/settings.local.json
+.worktrees/
+docs/superpowers
+.mcpregistry*_token

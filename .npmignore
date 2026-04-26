@@ -1,0 +1,8 @@
+src/
+infra/
+docs/
+**/*.test.ts
+*.md
+.prototools
+tsconfig.json
+bun.lock

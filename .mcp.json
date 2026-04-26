@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "cloud-fs": {
+      "command": "bunx",
+      "args": [
+        "@nogoo9/mcp-server-cloud-fs",
+        "s3",
+        "s3://test-bucket",
+        "--endpoint", "http://localhost:9000",
+        "--region", "us-east-1"
+      ],
+      "env": {
+        "AWS_ACCESS_KEY_ID": "minioadmin",
+        "AWS_SECRET_ACCESS_KEY": "minioadmin"
+      }
+    }
+  }
+}
