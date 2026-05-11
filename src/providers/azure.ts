@@ -4,6 +4,7 @@ import {
 	type BlockBlobUploadOptions,
 	StorageSharedKeyCredential,
 } from "@azure/storage-blob";
+import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
 	ObjectInfo,
@@ -88,7 +89,9 @@ export class AzureProvider implements StorageProvider {
 			.getBlockBlobClient(key);
 		await blobClient.upload(content, content.length, {
 			...this.defaultUploadOptions,
-			blobHTTPHeaders: { blobContentType: inferContentType(key) },
+			blobHTTPHeaders: {
+				blobContentType: await inferContentType(key, content),
+			},
 		});
 	}
 
@@ -183,23 +186,4 @@ async function streamToBuffer(
 	const chunks: Uint8Array[] = [];
 	for await (const chunk of stream) chunks.push(chunk);
 	return Buffer.concat(chunks);
-}
-
-function inferContentType(key: string): string {
-	const ext = key.split(".").pop()?.toLowerCase() ?? "";
-	const map: Record<string, string> = {
-		txt: "text/plain",
-		md: "text/markdown",
-		html: "text/html",
-		css: "text/css",
-		js: "application/javascript",
-		json: "application/json",
-		png: "image/png",
-		jpg: "image/jpeg",
-		jpeg: "image/jpeg",
-		gif: "image/gif",
-		pdf: "application/pdf",
-		zip: "application/zip",
-	};
-	return map[ext] ?? "application/octet-stream";
 }

@@ -10,6 +10,7 @@ import {
 	type PutObjectCommandInput,
 	S3Client,
 } from "@aws-sdk/client-s3";
+import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
 	ObjectInfo,
@@ -84,7 +85,7 @@ export class S3Provider implements StorageProvider {
 				Bucket: root.bucket,
 				Key: key,
 				Body: content,
-				ContentType: inferContentType(key),
+				ContentType: await inferContentType(key, content),
 			}),
 		);
 	}
@@ -175,31 +176,4 @@ async function streamToBuffer(
 	const chunks: Uint8Array[] = [];
 	for await (const chunk of stream) chunks.push(chunk);
 	return Buffer.concat(chunks);
-}
-
-function inferContentType(key: string): string {
-	const ext = key.split(".").pop()?.toLowerCase() ?? "";
-	const map: Record<string, string> = {
-		txt: "text/plain",
-		md: "text/markdown",
-		html: "text/html",
-		htm: "text/html",
-		css: "text/css",
-		csv: "text/csv",
-		js: "application/javascript",
-		ts: "application/typescript",
-		json: "application/json",
-		xml: "application/xml",
-		yaml: "text/yaml",
-		yml: "text/yaml",
-		png: "image/png",
-		jpg: "image/jpeg",
-		jpeg: "image/jpeg",
-		gif: "image/gif",
-		svg: "image/svg+xml",
-		webp: "image/webp",
-		pdf: "application/pdf",
-		zip: "application/zip",
-	};
-	return map[ext] ?? "application/octet-stream";
 }

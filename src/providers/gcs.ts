@@ -1,5 +1,6 @@
 // src/providers/gcs.ts
 import { type SaveOptions, Storage } from "@google-cloud/storage";
+import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
 	ObjectInfo,
@@ -73,7 +74,7 @@ export class GcsProvider implements StorageProvider {
 			.bucket(root.bucket)
 			.file(key)
 			.save(content, {
-				contentType: inferContentType(key),
+				contentType: await inferContentType(key, content),
 				...this.defaultSaveOptions,
 			});
 	}
@@ -160,31 +161,4 @@ export class GcsProvider implements StorageProvider {
 		// in some GCS emulators.
 		await this.putObject(root, key, Buffer.alloc(1));
 	}
-}
-
-function inferContentType(key: string): string {
-	const ext = key.split(".").pop()?.toLowerCase() ?? "";
-	const map: Record<string, string> = {
-		txt: "text/plain",
-		md: "text/markdown",
-		html: "text/html",
-		htm: "text/html",
-		css: "text/css",
-		csv: "text/csv",
-		js: "application/javascript",
-		ts: "application/typescript",
-		json: "application/json",
-		xml: "application/xml",
-		yaml: "text/yaml",
-		yml: "text/yaml",
-		png: "image/png",
-		jpg: "image/jpeg",
-		jpeg: "image/jpeg",
-		gif: "image/gif",
-		svg: "image/svg+xml",
-		webp: "image/webp",
-		pdf: "application/pdf",
-		zip: "application/zip",
-	};
-	return map[ext] ?? "application/octet-stream";
 }

@@ -70,18 +70,13 @@ export class SqliteProvider implements StorageProvider {
 		key: string,
 		content: Buffer,
 	): Promise<void> {
+		const contentType = await inferContentType(key, content);
 		this.db
 			.query(
 				`INSERT OR REPLACE INTO objects (bucket, key, content, content_type, size, last_modified)
 				VALUES (?, ?, ?, ?, ?, datetime('now'))`,
 			)
-			.run(
-				root.bucket,
-				key,
-				content,
-				inferContentType(key, content),
-				content.length,
-			);
+			.run(root.bucket, key, content, contentType, content.length);
 	}
 
 	async deleteObject(root: ParsedRoot, key: string): Promise<void> {

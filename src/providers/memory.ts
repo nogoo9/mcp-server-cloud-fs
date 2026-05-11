@@ -59,7 +59,7 @@ export class MemoryProvider implements StorageProvider {
 	): Promise<void> {
 		this.store.set(this.storeKey(root, key), {
 			content,
-			contentType: inferContentType(key, content),
+			contentType: await inferContentType(key, content),
 			lastModified: new Date(),
 		});
 	}
