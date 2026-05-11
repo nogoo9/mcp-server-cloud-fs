@@ -29,12 +29,7 @@ export class GcsProvider implements StorageProvider {
 			}),
 		});
 
-		// When apiEndpoint is set (emulator mode), disable CRC32C validation by
-		// default because fake-gcs-server returns inaccurate checksums.
-		// Callers can override this by passing explicit saveOptions.
-		const emulatorDefaults: SaveOptions =
-			opts.apiEndpoint !== undefined ? { validation: false } : {};
-		this.defaultSaveOptions = { ...emulatorDefaults, ...opts.saveOptions };
+		this.defaultSaveOptions = opts.saveOptions ?? {};
 	}
 
 	async ensureBucket(bucketName: string): Promise<void> {

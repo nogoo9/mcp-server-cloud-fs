@@ -26,7 +26,11 @@ try {
 		prefix: "",
 		uri: `gs://${BUCKET}`,
 	};
-	const probe = new GcsProvider({ apiEndpoint: GCS_HOST });
+	const probe = new GcsProvider({
+		apiEndpoint: GCS_HOST,
+		// fake-gcs-server returns inaccurate CRC32C checksums — disable validation.
+		saveOptions: { validation: false },
+	});
 	await probe.putObject(probeRoot, "__probe__", Buffer.from("ok"));
 	await probe.deleteObject(probeRoot, "__probe__");
 	reachable = true;
@@ -45,7 +49,11 @@ describe.skipIf(!reachable)("GcsProvider integration (fake-gcs-server)", () => {
 	let provider: GcsProvider;
 
 	beforeAll(() => {
-		provider = new GcsProvider({ apiEndpoint: GCS_HOST });
+		provider = new GcsProvider({
+			apiEndpoint: GCS_HOST,
+			// fake-gcs-server returns inaccurate CRC32C checksums — disable validation.
+			saveOptions: { validation: false },
+		});
 	});
 
 	const testKey = `integration-test/${Date.now()}/file.txt`;
