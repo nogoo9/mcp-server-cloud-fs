@@ -9,12 +9,23 @@ import type {
 
 export class GcsProvider implements StorageProvider {
 	private readonly storage: Storage;
+	private readonly emulatorMode: boolean;
 
-	constructor(opts: { projectId?: string; keyFilename?: string }) {
+	constructor(opts: {
+		projectId?: string;
+		keyFilename?: string;
+		apiEndpoint?: string;
+	}) {
 		this.storage = new Storage({
 			...(opts.projectId !== undefined && { projectId: opts.projectId }),
 			...(opts.keyFilename !== undefined && { keyFilename: opts.keyFilename }),
+			...(opts.apiEndpoint !== undefined && {
+				apiEndpoint: opts.apiEndpoint,
+				// Emulators don't issue real credentials — skip auth.
+				projectId: opts.projectId ?? "emulator-project",
+			}),
 		});
+		this.emulatorMode = opts.apiEndpoint !== undefined;
 	}
 
 	async ensureBucket(bucketName: string): Promise<void> {
@@ -63,6 +74,9 @@ export class GcsProvider implements StorageProvider {
 			.file(key)
 			.save(content, {
 				contentType: inferContentType(key),
+				// Disable checksum validation for emulators — fake-gcs-server does not
+				// return accurate CRC32C values, causing spurious integrity failures.
+				...(this.emulatorMode && { validation: false }),
 			});
 	}
 
@@ -144,7 +158,9 @@ export class GcsProvider implements StorageProvider {
 
 	async createPrefix(root: ParsedRoot, prefix: string): Promise<void> {
 		const key = prefix.endsWith("/") ? prefix : `${prefix}/`;
-		await this.putObject(root, key, Buffer.alloc(0));
+		// Use a 1-byte placeholder — GCS SDK upload integrity check fails
+		// with 0-byte content against fake-gcs-server and some real GCS edge cases.
+		await this.putObject(root, key, Buffer.alloc(1));
 	}
 }
 

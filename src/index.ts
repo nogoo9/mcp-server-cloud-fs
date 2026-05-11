@@ -25,6 +25,7 @@ Options:
   --no-cache                      Disable caching (pass-through mode)
   --enable-delete                 Enable the delete_file tool (disabled by default)
   --grep-max-objects <n>          Max objects grep_files will scan per call (default: 1000)
+  --gcs-endpoint <url>            Custom endpoint for GCS (e.g. fake-gcs-server for testing)
 
 Credentials are always sourced from SDK credential chains (env, ~/.aws, ADC, etc.).
 Redis URL via env: REDIS_URL (default: redis://localhost:6379)
@@ -44,6 +45,7 @@ interface CliArgs {
 	noCache: boolean;
 	enableDelete: boolean;
 	grepMaxObjects: number;
+	gcsEndpoint?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -64,6 +66,7 @@ function parseArgs(argv: string[]): CliArgs {
 	let noCache = false;
 	let enableDelete = false;
 	let grepMaxObjects = 1000;
+	let gcsEndpoint: string | undefined;
 
 	for (let i = 1; i < args.length; i++) {
 		const arg = args[i]!;
@@ -101,6 +104,8 @@ function parseArgs(argv: string[]): CliArgs {
 				usage();
 			}
 			grepMaxObjects = val;
+		} else if (arg === "--gcs-endpoint") {
+			gcsEndpoint = args[++i];
 		} else {
 			console.error(`Unknown argument: ${arg}`);
 			usage();
@@ -130,6 +135,7 @@ function parseArgs(argv: string[]): CliArgs {
 		noCache,
 		enableDelete,
 		grepMaxObjects,
+		...(gcsEndpoint !== undefined && { gcsEndpoint }),
 	};
 }
 
@@ -157,6 +163,7 @@ async function main(): Promise<void> {
 			...(process.env.GOOGLE_CLOUD_PROJECT && {
 				projectId: process.env.GOOGLE_CLOUD_PROJECT,
 			}),
+			...(args.gcsEndpoint !== undefined && { apiEndpoint: args.gcsEndpoint }),
 		});
 	}
 
