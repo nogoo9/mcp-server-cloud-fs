@@ -18,7 +18,9 @@ export type {
 	ParsedRoot,
 	StorageProvider,
 } from "./providers/interface.js";
+export { MemoryProvider } from "./providers/memory.js";
 export { S3Provider } from "./providers/s3.js";
+export { SqliteProvider } from "./providers/sqlite.js";
 export type { ServerContext } from "./server.js";
 export { createMcpServer } from "./server.js";
 export { executeShell } from "./tools/shell/index.js";

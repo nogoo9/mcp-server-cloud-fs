@@ -19,7 +19,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `--enable-shell` CLI flag — opt-in to register the `shell` tool (disabled by default for safety)
 - **Programmatic API**: `executeShell(command, ctx)` exported from the npm library for use without MCP
 - `ShellContext` and `ShellCommandHandler` types exported for custom command extensions
-- 48 unit tests covering parser, all 17 commands, pipelines, redirects, and security
+- **In-Memory provider** (`MemoryProvider`) — fully in-process storage for demos and tests; zero dependencies, URI format `mem://bucket-name`
+- **SQLite provider** (`SqliteProvider`) — persistent local storage using `bun:sqlite`; zero external deps, WAL mode, URI format `sqlite://bucket-name`, requires `--sqlite-db <path>` CLI flag
+- **MCP App: Interactive Shell** — xterm.js-based terminal UI that renders inside MCP hosts (Claude Desktop etc.) via the [MCP Apps extension](https://modelcontextprotocol.io/extensions/apps/overview); Catppuccin Mocha theme, command history, auto-resize
+- `--sqlite-db <path>` CLI flag for specifying the SQLite database file location
+- `bun run inspect` and `bun run inspect:memory` scripts for launching the [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector)
+- `bun run build:app` script to bundle the xterm.js shell app into a single HTML file
+- 74 unit tests covering providers, parser, all 17 commands, pipelines, redirects, and security
 
 ## [0.2.0] — 2026-05-12
 

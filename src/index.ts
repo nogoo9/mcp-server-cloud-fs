@@ -9,12 +9,21 @@ import { parseUri } from "./path-utils.js";
 import { AzureProvider } from "./providers/azure.js";
 import { GcsProvider } from "./providers/gcs.js";
 import type { StorageProvider } from "./providers/interface.js";
+import { MemoryProvider } from "./providers/memory.js";
 import { S3Provider } from "./providers/s3.js";
+import { SqliteProvider } from "./providers/sqlite.js";
 import { createMcpServer } from "./server.js";
 import { VirtualFS } from "./vfs.js";
 
 function usage(): never {
-	console.error(`Usage: cloud-fs-mcp <s3|azure|gcs> <root-uri> [root-uri...] [options]
+	console.error(`Usage: cloud-fs-mcp <s3|azure|gcs|memory|sqlite> <root-uri> [root-uri...] [options]
+
+Providers:
+  s3      Amazon S3 / S3-compatible (MinIO, RustFS). Root URI: s3://bucket/prefix
+  azure   Azure Blob Storage. Root URI: az://container/prefix
+  gcs     Google Cloud Storage. Root URI: gs://bucket/prefix
+  memory  In-memory (ephemeral, for demos). Root URI: mem://bucket-name
+  sqlite  SQLite (persistent local). Root URI: sqlite://bucket-name
 
 Options:
   --region <region>               Provider region (S3, GCS)
@@ -28,6 +37,7 @@ Options:
   --grep-max-objects <n>          Max objects grep_files will scan per call (default: 1000)
   --gcs-endpoint <url>            Custom endpoint for GCS (e.g. fake-gcs-server for testing)
   --enable-shell                  Enable the shell tool (disabled by default)
+  --sqlite-db <path>              SQLite database file path (required for sqlite provider)
 
 Credentials are always sourced from SDK credential chains (env, ~/.aws, ADC, etc.).
 Redis URL via env: REDIS_URL (default: redis://localhost:6379)
@@ -36,7 +46,7 @@ Redis URL via env: REDIS_URL (default: redis://localhost:6379)
 }
 
 interface CliArgs {
-	providerName: "s3" | "azure" | "gcs";
+	providerName: "s3" | "azure" | "gcs" | "memory" | "sqlite";
 	rootUris: string[];
 	region?: string;
 	endpoint?: string;
@@ -49,6 +59,7 @@ interface CliArgs {
 	grepMaxObjects: number;
 	gcsEndpoint?: string;
 	enableShell: boolean;
+	sqliteDb?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -56,8 +67,8 @@ function parseArgs(argv: string[]): CliArgs {
 	if (args.length < 2) usage();
 
 	const providerArg = args[0]!;
-	if (providerArg !== "s3" && providerArg !== "azure" && providerArg !== "gcs")
-		usage();
+	const validProviders = ["s3", "azure", "gcs", "memory", "sqlite"];
+	if (!validProviders.includes(providerArg)) usage();
 
 	const rootUris: string[] = [];
 	let region: string | undefined;
@@ -71,13 +82,16 @@ function parseArgs(argv: string[]): CliArgs {
 	let grepMaxObjects = 1000;
 	let gcsEndpoint: string | undefined;
 	let enableShell = false;
+	let sqliteDb: string | undefined;
 
 	for (let i = 1; i < args.length; i++) {
 		const arg = args[i]!;
 		if (
 			arg.startsWith("s3://") ||
 			arg.startsWith("az://") ||
-			arg.startsWith("gs://")
+			arg.startsWith("gs://") ||
+			arg.startsWith("mem://") ||
+			arg.startsWith("sqlite://")
 		) {
 			rootUris.push(arg);
 		} else if (arg === "--region") {
@@ -114,6 +128,8 @@ function parseArgs(argv: string[]): CliArgs {
 			gcsEndpoint = args[++i];
 		} else if (arg === "--enable-shell") {
 			enableShell = true;
+		} else if (arg === "--sqlite-db") {
+			sqliteDb = args[++i];
 		} else {
 			console.error(`Unknown argument: ${arg}`);
 			usage();
@@ -130,9 +146,13 @@ function parseArgs(argv: string[]): CliArgs {
 		);
 		usage();
 	}
+	if (providerArg === "sqlite" && !sqliteDb) {
+		console.error("Error: --sqlite-db is required for the sqlite provider.");
+		usage();
+	}
 
 	return {
-		providerName: providerArg,
+		providerName: providerArg as CliArgs["providerName"],
 		rootUris,
 		...(region !== undefined && { region }),
 		...(endpoint !== undefined && { endpoint }),
@@ -145,6 +165,7 @@ function parseArgs(argv: string[]): CliArgs {
 		grepMaxObjects,
 		...(gcsEndpoint !== undefined && { gcsEndpoint }),
 		enableShell,
+		...(sqliteDb !== undefined && { sqliteDb }),
 	};
 }
 
@@ -167,6 +188,10 @@ async function main(): Promise<void> {
 			process.exit(1);
 		}
 		provider = new AzureProvider({ connectionString: connStr });
+	} else if (args.providerName === "memory") {
+		provider = new MemoryProvider();
+	} else if (args.providerName === "sqlite") {
+		provider = new SqliteProvider({ dbPath: args.sqliteDb! });
 	} else {
 		provider = new GcsProvider({
 			...(process.env.GOOGLE_CLOUD_PROJECT && {

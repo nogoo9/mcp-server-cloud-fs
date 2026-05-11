@@ -1,7 +1,7 @@
 // src/providers/interface.ts
 
 export interface ParsedRoot {
-	scheme: "s3" | "az" | "gs";
+	scheme: "s3" | "az" | "gs" | "mem" | "sqlite";
 	bucket: string;
 	prefix: string; // empty string = whole bucket
 	uri: string; // original URI string, e.g. "s3://my-bucket/my-prefix"
