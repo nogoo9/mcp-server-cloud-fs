@@ -4,7 +4,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { minimatch } from "minimatch";
 import { z } from "zod";
-import { resolveToolPath, toCacheKey } from "../path-utils.js";
+import { resolveToolPath } from "../path-utils.js";
 import type { ParsedRoot } from "../providers/interface.js";
 import type { VirtualFS } from "../vfs.js";
 

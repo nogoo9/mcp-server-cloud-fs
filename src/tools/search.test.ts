@@ -1,9 +1,8 @@
 // src/tools/search.test.ts
-import { describe, expect, it } from "bun:test";
-import { mock } from "bun:test";
+import { describe, expect, it, mock } from "bun:test";
 import { parseUri } from "../path-utils.js";
 import type { ObjectInfo } from "../providers/interface.js";
-import { makeCache, makeProvider, makeVfs } from "./__test-helpers.js";
+import { makeProvider, makeVfs } from "./__test-helpers.js";
 import { handleSearchFiles } from "./search.js";
 
 const roots = [parseUri("s3://test-bucket")];

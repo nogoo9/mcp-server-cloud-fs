@@ -1,7 +1,6 @@
 // src/vfs.test.ts
 import { describe, expect, it, mock } from "bun:test";
 import type { CacheStore } from "./cache/interface.js";
-import { toCacheKey } from "./path-utils.js";
 import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
 import { VirtualFS } from "./vfs.js";
 

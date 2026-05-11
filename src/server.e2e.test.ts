@@ -13,6 +13,8 @@
 //   4. Write the second file through MCP → cache is invalidated.
 //   5. list_directory now returns both files → proves eviction.
 
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { randomBytes } from "node:crypto";
 import {
 	CreateBucketCommand,
 	DeleteObjectsCommand,
@@ -22,8 +24,6 @@ import {
 } from "@aws-sdk/client-s3";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { randomBytes } from "crypto";
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ async function probeHttp(url: string): Promise<boolean> {
 }
 
 async function probeTcp(host: string, port: number): Promise<boolean> {
-	const net = await import("net");
+	const net = await import("node:net");
 	return new Promise<boolean>((resolve) => {
 		const sock = net.createConnection({ port, host });
 		sock.setTimeout(2000);
