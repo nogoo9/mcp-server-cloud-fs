@@ -10,6 +10,7 @@ export { createRedisStore } from "./cache/redis.js";
 // Utilities
 export { parseUri, resolveToolPath, toCacheKey } from "./path-utils.js";
 export { AzureProvider } from "./providers/azure.js";
+export { inferContentType } from "./providers/content-type.js";
 export { GcsProvider } from "./providers/gcs.js";
 // Storage providers
 export type {
@@ -18,8 +19,12 @@ export type {
 	ParsedRoot,
 	StorageProvider,
 } from "./providers/interface.js";
+export { MemoryProvider } from "./providers/memory.js";
 export { S3Provider } from "./providers/s3.js";
+export { SqliteProvider } from "./providers/sqlite.js";
 export type { ServerContext } from "./server.js";
 export { createMcpServer } from "./server.js";
+export { executeShell } from "./tools/shell/index.js";
+export type { ShellCommandHandler, ShellContext } from "./tools/shell/types.js";
 export type { VfsStat } from "./vfs.js";
 export { VirtualFS } from "./vfs.js";

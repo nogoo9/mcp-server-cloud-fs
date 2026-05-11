@@ -2,9 +2,9 @@
 import type { ParsedRoot } from "./providers/interface.js";
 
 export function parseUri(uri: string): ParsedRoot {
-	const m = uri.match(/^(s3|az|gs):\/\/([^/]+)(?:\/(.*))?$/);
+	const m = uri.match(/^(s3|az|gs|mem|sqlite):\/\/([^/]+)(?:\/(.*))?$/);
 	if (!m) throw new Error(`Invalid cloud URI: ${uri}`);
-	const scheme = m[1] as "s3" | "az" | "gs";
+	const scheme = m[1] as ParsedRoot["scheme"];
 	const bucket = m[2]!;
 	const rawPrefix = m[3] ?? "";
 	const prefix = rawPrefix.replace(/\/$/, "");

@@ -1,8 +1,8 @@
 {
   "name": "@nogoo9/mcp-server-cloud-fs",
   "mcpName": "io.github.nogoo9/mcp-server-cloud-fs",
-  "version": "0.2.0",
-  "description": "Cloud replacement for mcp-server-filesystem — 19 tools for S3, Azure Blob, and GCS",
+  "version": "0.3.0",
+  "description": "Cloud replacement for mcp-server-filesystem — 20 tools for S3, Azure Blob, and GCS",
   "type": "module",
   "bin": {
     "cloud-fs-mcp": "dist/index.js"
@@ -30,7 +30,10 @@
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "infra:setup": "docker compose -f infra/docker-compose.yml up -d",
-    "infra:logs": "docker compose -f infra/docker-compose.yml logs"
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs",
+    "build:app": "vite build -c src/app/vite.config.ts",
+    "inspect": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts",
+    "inspect:memory": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts memory mem://demo --enable-shell --seed-demo"
   },
   "files": [
     "dist/",
@@ -54,7 +57,9 @@
     "@aws-sdk/client-s3": "^3.0.0",
     "@azure/storage-blob": "^12.0.0",
     "@google-cloud/storage": "^7.0.0",
+    "@modelcontextprotocol/ext-apps": "^1.7.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "file-type": "^22.0.1",
     "minimatch": "^9.0.0",
     "zod": "^3.0.0"
   },
@@ -69,7 +74,11 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
     "@types/bun": "latest",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "ioredis": "^5.0.0",
     "typescript": "^5.0.0",
-    "ioredis": "^5.0.0"
+    "vite": "^8.0.12",
+    "vite-plugin-singlefile": "^2.3.3"
   }
 }

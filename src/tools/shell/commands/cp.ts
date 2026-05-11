@@ -1,0 +1,24 @@
+// src/tools/shell/commands/cp.ts
+
+import { resolveToolPath } from "../../../path-utils.js";
+import type { ShellCommandHandler } from "../types.js";
+
+/**
+ * cp <source> <destination>
+ *
+ * Copy a file from source to destination using VFS.copy().
+ */
+export const cp: ShellCommandHandler = async (args, ctx, _stdin) => {
+	if (args.length < 2) {
+		throw new Error("cp: missing file operand");
+	}
+	if (args.length > 2) {
+		throw new Error("cp: too many arguments");
+	}
+
+	const { root: srcRoot, key: srcKey } = resolveToolPath(ctx.roots, args[0]!);
+	const { root: dstRoot, key: dstKey } = resolveToolPath(ctx.roots, args[1]!);
+
+	await ctx.vfs.copy(srcRoot, srcKey, dstRoot, dstKey);
+	return "";
+};

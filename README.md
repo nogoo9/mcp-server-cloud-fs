@@ -6,13 +6,15 @@
 ![NPM Downloads](https://img.shields.io/npm/dm/%40nogoo%2Fmcp-server-cloud-fs)
 [![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue)](LICENSE)
 
-Cloud replacement for `mcp-server-filesystem` — 19 tools for S3, Azure Blob, and GCS. Also available as an npm library.
+Cloud replacement for `mcp-server-filesystem` — 20 tools for S3, Azure Blob, and GCS. Also available as an npm library.
 
 ![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?logo=amazons3&logoColor=white)
 ![Azure Blob Storage](https://img.shields.io/badge/Azure_Blob_Storage-0078D4?logo=microsoftazure&logoColor=white)
 ![Google Cloud Storage](https://img.shields.io/badge/Google_Cloud_Storage-4285F4?logo=googlecloud&logoColor=white)
 ![MinIO](https://img.shields.io/badge/MinIO-C72E49?logo=minio&logoColor=white)
 ![RustFS](https://img.shields.io/badge/RustFS-DEA584?logo=rust&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
+![In-Memory](https://img.shields.io/badge/In--Memory-6C63FF?logoColor=white)
 
 ## What it does
 
@@ -20,7 +22,7 @@ Cloud replacement for `mcp-server-filesystem` — 19 tools for S3, Azure Blob, a
 
 It also includes **5 extended tools** inspired by [claude-code's filesystem tool surface](https://github.com/codeaashu/claude-code/tree/main/src/tools): line-range reads, in-process regex search (single file and multi-file), server-side copy, and opt-in deletion.
 
-A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, and the package is available as a **programmatic npm library**.
+A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, a **shell tool** lets you run POSIX-like commands (`ls`, `grep`, `cat | wc`, etc.) against cloud storage, and the package is available as a **programmatic npm library**.
 
 ## Quick start
 
@@ -33,7 +35,7 @@ npx @nogoo9/mcp-server-cloud-fs s3 s3://my-bucket
 ```
 cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 
-Providers:   s3 | azure | gcs
+Providers:   s3 | azure | gcs | memory | sqlite
 
 Options:
   --region <region>                 Cloud region (S3, GCS)
@@ -46,6 +48,8 @@ Options:
   --enable-delete                   Enable the delete_file tool (disabled by default)
   --grep-max-objects <n>            Max objects grep_files scans per call (default: 1000)
   --gcs-endpoint <url>              Custom endpoint for GCS (e.g. fake-gcs-server)
+  --enable-shell                    Enable the shell tool (disabled by default)
+  --sqlite-db <path>                SQLite database file path (required for sqlite provider)
 ```
 
 Credentials are always sourced from SDK credential chains — never CLI flags.
@@ -85,6 +89,32 @@ Uses Application Default Credentials (ADC). Set `GOOGLE_APPLICATION_CREDENTIALS`
 ```bash
 cloud-fs-mcp gcs gs://my-bucket
 ```
+
+### In-Memory (ephemeral)
+
+Zero-config, zero-dependency provider. All data lives in a `Map` and is lost when the process exits. Great for demos, tests, and quick exploration.
+
+URI format: `mem://<bucket-name>` (bucket name is arbitrary — just a namespace).
+
+```bash
+cloud-fs-mcp memory mem://demo --enable-shell
+```
+
+No credentials required.
+
+### SQLite (persistent local)
+
+Persistent local storage using Bun's built-in `bun:sqlite`. Zero external dependencies. Data survives process restarts.
+
+URI format: `sqlite://<bucket-name>` — the bucket is a logical namespace within the database.
+
+Requires `--sqlite-db <path>` to specify the database file location.
+
+```bash
+cloud-fs-mcp sqlite sqlite://my-bucket --sqlite-db /tmp/cloud-fs.db --enable-shell
+```
+
+The SQLite database is created automatically if it doesn't exist. Uses WAL mode for concurrent read performance.
 
 ## MCP client config
 
@@ -144,15 +174,45 @@ const server = createMcpServer({ vfs, roots });
 // Connect to your transport of choice
 ```
 
+### Shell (programmatic)
+
+The shell executor is also available without MCP for scripting and embedding:
+
+```ts
+import {
+  executeShell,
+  VirtualFS,
+  MemoryStore,
+  S3Provider,
+  parseUri,
+} from "@nogoo9/mcp-server-cloud-fs";
+
+const roots    = [parseUri("s3://my-bucket")];
+const provider = new S3Provider({ region: "us-east-1" });
+const cache    = new MemoryStore(provider, { ttlMs: 60_000, syncDebounceMs: 2000 });
+const vfs      = new VirtualFS(provider, cache);
+await vfs.hydrate();
+
+// Run shell commands programmatically
+const listing = await executeShell("ls -l s3://my-bucket", { vfs, roots });
+const matches = await executeShell("cat s3://my-bucket/data.csv | grep ERROR | wc -l", { vfs, roots });
+console.log(listing);
+console.log(`Error count: ${matches.trim()}`);
+```
+
 ### Exported types & classes
 
 | Export | Description |
 |---|---|
 | `createMcpServer(ctx)` | Create a configured MCP server instance |
+| `executeShell(command, ctx)` | Run a POSIX-like shell command against the VFS (no MCP required) |
 | `VirtualFS` | FUSE-inspired write-back overlay (see Architecture below) |
 | `MemoryStore`, `FilesystemStore`, `createRedisStore`, `PassThroughCache` | Cache backends |
-| `S3Provider`, `AzureProvider`, `GcsProvider` | Storage provider implementations |
+| `S3Provider`, `AzureProvider`, `GcsProvider` | Cloud storage providers |
+| `MemoryProvider` | In-memory provider (ephemeral, for demos) |
+| `SqliteProvider` | SQLite provider (persistent local storage) |
 | `parseUri`, `toCacheKey`, `resolveToolPath` | Path utilities |
+| `ShellContext`, `ShellCommandHandler` | Types for custom shell command extensions |
 
 ---
 
@@ -215,6 +275,39 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | `list_allowed_directories` | _(none)_ | Return the list of configured root URIs. Useful for the model to know which paths it is allowed to access. |
 
 > ✨ = Extended tool
+
+### Shell tool ⚡
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `shell` ⚡ | `command` | Execute POSIX-like shell commands against cloud storage. Supports pipes (`\|`), input redirection (`<`), and output redirection (`>`, `>>`). **Only available when the server is started with `--enable-shell`.** |
+
+**Built-in commands:** `ls`, `cat`, `head`, `tail`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `stat`, `find`, `grep`, `wc`, `du`, `echo`, `tee`, `diff`
+
+**Examples:**
+```bash
+# List files
+shell "ls -l s3://my-bucket/data/"
+
+# Pipe chain
+shell "cat s3://my-bucket/config.json | grep port | wc -l"
+
+# Output redirection
+shell "echo hello world > s3://my-bucket/greeting.txt"
+
+# Input redirection
+shell "grep error < s3://my-bucket/app.log"
+
+# Copy and move
+shell "cp s3://my-bucket/a.txt s3://my-bucket/b.txt"
+shell "mv s3://my-bucket/old.txt s3://my-bucket/new.txt"  # requires --enable-delete
+```
+
+> ⚡ = Shell tool (requires `--enable-shell`)
+> 
+> `rm` and `mv` within the shell additionally require `--enable-delete`.
+> All paths must be cloud URIs. No real shell process is spawned — commands execute in-process against the VFS.
+> `ls -l` outputs POSIX-like formatting with `----------` for permissions (cloud storage has no permission model).
 
 ---
 
@@ -312,6 +405,70 @@ All reads and writes are routed through a transparent cache layer to reduce roun
 **Graceful shutdown:** On `SIGTERM` or `SIGINT`, all dirty cache entries are flushed to the provider synchronously before the process exits, preventing data loss.
 
 **Pass-through mode:** `--no-cache` disables the cache entirely. Every read and write goes directly to the provider. The VFS overlay still provides session-level consistency for metadata.
+
+---
+
+## MCP Inspector
+
+The [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) is a web-based tool for interacting with and debugging MCP servers. Use it to test your configuration before deploying to an AI assistant.
+
+### Quick start (memory provider)
+
+The fastest way to explore the server — no credentials, no cloud setup:
+
+```bash
+bun run inspect:memory
+```
+
+This launches the Inspector connected to a memory-backed server with the shell tool enabled.
+
+### Custom configuration
+
+```bash
+# Generic inspector command (append your CLI args)
+bun run inspect -- s3 s3://my-bucket --region us-east-1 --enable-shell
+
+# Or directly with npx
+npx -y @modelcontextprotocol/inspector -- bun src/index.ts sqlite sqlite://demo --sqlite-db /tmp/test.db --enable-shell
+```
+
+### What to verify
+
+1. **Tools tab** — confirm all expected tools appear (20 core + shell + shell_app).
+2. **Call a tool** — try `list_allowed_directories` to see your configured roots.
+3. **Shell commands** — if `--enable-shell` is enabled, test `shell` with `ls mem://demo`.
+4. **Resources tab** — if the MCP App is built, the `ui://cloud-fs/shell-app.html` resource should appear.
+
+---
+
+## MCP App: Interactive Shell (xterm.js)
+
+When `--enable-shell` is enabled, the server also registers an **MCP App** — an interactive xterm.js terminal that renders inside compatible MCP hosts (like Claude Desktop).
+
+### Building the App
+
+The app must be bundled into a single HTML file before use:
+
+```bash
+bun run build:app
+```
+
+This outputs `dist/app/shell-app.html` — a self-contained HTML file with xterm.js and the MCP App bridge inlined.
+
+### How it works
+
+1. The server registers a `shell_app` tool with a `_meta.ui.resourceUri` pointing to the bundled HTML.
+2. The server also registers a `ui://cloud-fs/shell-app.html` resource that serves the HTML.
+3. When a compatible MCP host invokes `shell_app`, it renders the xterm.js terminal in an iframe.
+4. The terminal calls back to the server's `shell` tool via `app.callServerTool()` for each command.
+
+### Features
+
+- **Catppuccin Mocha** dark theme
+- Command history (up/down arrows)
+- Built-in `help` and `clear` commands
+- Color-coded error output
+- Auto-resizing terminal
 
 ---
 

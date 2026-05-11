@@ -1,18 +1,18 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json",
   "name": "io.github.nogoo9/mcp-server-cloud-fs",
-  "description": "Cloud replacement for mcp-server-filesystem \u2014 19 tools for S3, Azure Blob, and GCS",
+  "description": "Cloud replacement for mcp-server-filesystem \u2014 20 tools for S3, Azure Blob, and GCS",
   "repository": {
     "url": "https://github.com/nogoo9/mcp-server-cloud-fs",
     "source": "github"
   },
-  "version": "0.2.0",
+  "version": "0.3.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@nogoo9/mcp-server-cloud-fs",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "runtimeHint": "bunx",
       "transport": {
         "type": "stdio"
@@ -76,6 +76,12 @@
           "valueHint": "1000",
           "description": "Maximum number of objects grep_files will scan per call (default: 1000)",
           "default": "1000"
+        },
+        {
+          "type": "named",
+          "name": "--enable-shell",
+          "description": "Enable the shell tool for POSIX-like commands on cloud storage (disabled by default)",
+          "isFlag": true
         }
       ],
       "environmentVariables": [
