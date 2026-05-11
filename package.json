@@ -1,27 +1,42 @@
 {
   "name": "@nogoo9/mcp-server-cloud-fs",
   "mcpName": "io.github.nogoo9/mcp-server-cloud-fs",
-  "version": "0.1.0",
-  "description": "Drop-in cloud replacement for mcp-server-filesystem — all 14 MCP tools over S3, Azure Blob, and GCS",
+  "version": "0.2.0",
+  "description": "Cloud replacement for mcp-server-filesystem — 19 tools for S3, Azure Blob, and GCS",
   "type": "module",
   "bin": {
     "cloud-fs-mcp": "dist/index.js"
   },
+  "main": "dist/lib.js",
+  "types": "dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    }
+  },
   "scripts": {
-    "build": "bun build src/index.ts --outfile dist/index.js --target bun --minify && chmod +x dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
     "prepublishOnly": "bun run build",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/",
-    "format": "biome format --write src/",
-    "check": "biome check --write src/",
-    "test": "bun test",
+    "format": "biome check --write --unsafe src/",
+    "check": "biome check --write --unsafe src/",
+    "test": "bun test src/cache src/providers src/tools src/path-utils.test.ts src/vfs.test.ts",
+    "test:coverage": "bun test --coverage --coverage-reporter=lcov --coverage-dir=coverage",
     "test:integration": "bun test src/providers/*.integration.test.ts",
+    "test:e2e": "bun test src/server.e2e.test.ts --timeout 30000",
+    "test:all": "bun test --timeout 30000",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
-    "infra:setup": "bun run infra:up && docker compose -f infra/docker-compose.yml exec minio mc alias set local http://localhost:9000 minioadmin minioadmin && docker compose -f infra/docker-compose.yml exec minio mc mb local/test-bucket --ignore-existing"
+    "infra:setup": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs"
   },
   "files": [
-    "dist/"
+    "dist/",
+    "src/",
+    "!src/**/*.test.ts",
+    "!src/**/__test-helpers.ts"
   ],
   "license": "PolyForm-Shield-1.0.0",
   "publishConfig": {
@@ -29,7 +44,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nogoo9/mcp-server-cloud-fs"
+    "url": "git+https://github.com/nogoo9/mcp-server-cloud-fs.git"
   },
   "homepage": "https://github.com/nogoo9/mcp-server-cloud-fs#readme",
   "bugs": {
@@ -44,7 +59,7 @@
     "zod": "^3.0.0"
   },
   "peerDependencies": {
-    "ioredis": "^5.0.0"
+    "ioredis": ""
   },
   "peerDependenciesMeta": {
     "ioredis": {
@@ -54,6 +69,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
     "@types/bun": "latest",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "ioredis": "^5.0.0"
   }
 }

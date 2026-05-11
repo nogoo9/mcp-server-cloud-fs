@@ -11,6 +11,7 @@ import { GcsProvider } from "./providers/gcs.js";
 import type { StorageProvider } from "./providers/interface.js";
 import { S3Provider } from "./providers/s3.js";
 import { createMcpServer } from "./server.js";
+import { VirtualFS } from "./vfs.js";
 
 function usage(): never {
 	console.error(`Usage: cloud-fs-mcp <s3|azure|gcs> <root-uri> [root-uri...] [options]
@@ -23,6 +24,9 @@ Options:
   --sync-debounce <ms>            Write debounce window in ms (default: 2000)
   --cache-dir <path>              Required when --cache-store fs
   --no-cache                      Disable caching (pass-through mode)
+  --enable-delete                 Enable the delete_file tool (disabled by default)
+  --grep-max-objects <n>          Max objects grep_files will scan per call (default: 1000)
+  --gcs-endpoint <url>            Custom endpoint for GCS (e.g. fake-gcs-server for testing)
 
 Credentials are always sourced from SDK credential chains (env, ~/.aws, ADC, etc.).
 Redis URL via env: REDIS_URL (default: redis://localhost:6379)
@@ -40,6 +44,9 @@ interface CliArgs {
 	syncDebounceMs: number;
 	cacheDir?: string;
 	noCache: boolean;
+	enableDelete: boolean;
+	grepMaxObjects: number;
+	gcsEndpoint?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -58,6 +65,9 @@ function parseArgs(argv: string[]): CliArgs {
 	let syncDebounceMs = 2_000;
 	let cacheDir: string | undefined;
 	let noCache = false;
+	let enableDelete = false;
+	let grepMaxObjects = 1000;
+	let gcsEndpoint: string | undefined;
 
 	for (let i = 1; i < args.length; i++) {
 		const arg = args[i]!;
@@ -86,6 +96,19 @@ function parseArgs(argv: string[]): CliArgs {
 			cacheDir = args[++i];
 		} else if (arg === "--no-cache") {
 			noCache = true;
+		} else if (arg === "--enable-delete") {
+			enableDelete = true;
+		} else if (arg === "--grep-max-objects") {
+			const val = Number(args[++i]);
+			if (!Number.isInteger(val) || val < 1) {
+				console.error(
+					`Invalid --grep-max-objects value: must be a positive integer`,
+				);
+				usage();
+			}
+			grepMaxObjects = val;
+		} else if (arg === "--gcs-endpoint") {
+			gcsEndpoint = args[++i];
 		} else {
 			console.error(`Unknown argument: ${arg}`);
 			usage();
@@ -113,6 +136,9 @@ function parseArgs(argv: string[]): CliArgs {
 		syncDebounceMs,
 		...(cacheDir !== undefined && { cacheDir }),
 		noCache,
+		enableDelete,
+		grepMaxObjects,
+		...(gcsEndpoint !== undefined && { gcsEndpoint }),
 	};
 }
 
@@ -140,6 +166,7 @@ async function main(): Promise<void> {
 			...(process.env.GOOGLE_CLOUD_PROJECT && {
 				projectId: process.env.GOOGLE_CLOUD_PROJECT,
 			}),
+			...(args.gcsEndpoint !== undefined && { apiEndpoint: args.gcsEndpoint }),
 		});
 	}
 
@@ -160,10 +187,14 @@ async function main(): Promise<void> {
 		cache = new MemoryStore(provider, cacheOpts);
 	}
 
+	// Create VFS overlay and hydrate persisted metadata
+	const vfs = new VirtualFS(provider, cache);
+	await vfs.hydrate();
+
 	const flushAndExit = async (signal: string): Promise<void> => {
 		console.error(`\nReceived ${signal}, flushing dirty cache entries...`);
 		try {
-			await cache.flush();
+			await vfs.flush();
 		} catch (err) {
 			console.error("Flush error:", err);
 		}
@@ -176,7 +207,12 @@ async function main(): Promise<void> {
 		void flushAndExit("SIGINT");
 	});
 
-	const server = createMcpServer({ provider, cache, roots });
+	const server = createMcpServer({
+		vfs,
+		roots,
+		enableDelete: args.enableDelete,
+		grepMaxObjects: args.grepMaxObjects,
+	});
 	const transport = new StdioServerTransport();
 	await server.connect(transport);
 	console.error(

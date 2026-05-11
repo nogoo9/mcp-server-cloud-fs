@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - [Proto](https://moonrepo.dev/proto) — manages the pinned Bun version
-- Docker — required for integration tests against local provider emulators
+- Docker — required for integration and end-to-end tests against local provider emulators
 
 ## Setup
 
@@ -18,61 +18,133 @@ bun install
 
 ## Running tests
 
-Unit tests (no cloud credentials required):
+### Test tiers
+
+The project has three tiers of tests. Each tier builds on the previous one.
+
+| Tier | Command | What it tests | Requires infra? |
+|---|---|---|---|
+| **Unit** | `bun run test` | Tool handlers, cache backends, VFS overlay, path utilities | No |
+| **Integration** | `bun run test:integration` | Provider implementations against emulator containers | Yes |
+| **End-to-end** | `bun run test:e2e` | Full MCP server over stdio transport with real provider + VFS | Yes |
+| **All** | `bun run test:all` | Runs every test file (unit + integration + e2e) | Yes |
+
+### Unit tests
+
+Unit tests mock the storage provider and cache, then exercise tool handlers through the VFS layer. No cloud credentials or containers needed.
 
 ```bash
-bun test
+bun run test       # runs src/cache, src/providers, src/tools, src/path-utils, src/vfs tests
 ```
 
-Lint and format ([Biome](https://biomejs.dev)):
+Key conventions:
+
+- Tool tests use the shared helpers in `src/tools/__test-helpers.ts` to build a `{ vfs, roots }` context
+- VFS tests in `src/vfs.test.ts` cover inode overlay, dirIndex, tombstones, and persistence round-trip
+- Cache backend tests (memory, filesystem, Redis) verify TTL, dirty tracking, and debounce behaviour
+
+### Integration tests
+
+Integration tests run against local provider emulators (MinIO for S3, Azurite for Azure, fake-gcs-server for GCS). Start the containers first:
 
 ```bash
-bun run lint       # check for lint and format issues
+bun run infra:up            # starts MinIO, Azurite, fake-gcs-server, Redis
+bun run test:integration    # runs src/providers/*.integration.test.ts
+```
+
+Each integration test suite:
+
+1. Checks if the emulator endpoint is reachable (skips gracefully if not)
+2. Creates a unique test prefix to avoid collisions
+3. Exercises `putObject`, `getObject`, `headObject`, `listObjects`, `copyObject`, `deleteObject`, `createPrefix`
+4. Cleans up after itself
+
+### End-to-end tests
+
+E2E tests spawn the full MCP server as a subprocess and interact with it over the MCP stdio transport. They validate the complete pipeline: CLI arg parsing → provider → VFS → cache → tool response.
+
+```bash
+bun run infra:up            # ensure containers are running
+bun run test:e2e            # runs src/server.e2e.test.ts (30s timeout)
+```
+
+The E2E suite tests:
+
+- File write → read round-trip through MCP tools
+- Write visibility through `list_directory` (VFS coherence)
+- Cache hit/miss behaviour
+- Cache eviction after MCP-mediated writes
+- Graceful shutdown flushing
+
+### Lint, format, and typecheck
+
+```bash
+bun run lint       # check for lint and format issues (Biome)
 bun run format     # auto-format source files
 bun run check      # lint + format, apply safe fixes
+bun run typecheck  # tsc --noEmit
 ```
 
-Type check:
+### Build
 
 ```bash
-bun run typecheck
+bun run build      # tsc -p tsconfig.build.json → dist/ (JS + .d.ts + source maps)
 ```
 
-Build:
+### Coverage
+
+Generate an lcov coverage report locally:
 
 ```bash
-bun run build      # outputs dist/index.js
+bun run test:coverage   # runs all tests with --coverage, outputs coverage/lcov.info
 ```
 
-## Integration tests
+In CI, the [Coveralls GitHub Action](https://github.com/coverallsapp/github-action) uploads `coverage/lcov.info` after every push/PR to `main`. Coverage results are visible at [coveralls.io](https://coveralls.io/github/nogoo9/mcp-server-cloud-fs) and as a badge in the README.
 
-Integration tests run against local provider emulators via Docker Compose:
+## Infrastructure
+
+All emulator services are defined in `infra/docker-compose.yml`:
+
+| Service | Port | Purpose |
+|---|---|---|
+| MinIO | 9000 | S3-compatible provider tests |
+| Azurite | 10000 | Azure Blob Storage provider tests |
+| fake-gcs-server | 4443 | Google Cloud Storage provider tests |
+| Redis | 6379 | Redis cache backend tests + E2E |
 
 ```bash
-bun run infra:up       # starts MinIO on :9000
-bun run infra:setup    # creates the test-bucket
-bun run test:integration
-```
-
-Tear down when done:
-
-```bash
-bun run infra:down
+bun run infra:up       # start all containers
+bun run infra:down     # tear down all containers
+bun run infra:logs     # tail container logs
 ```
 
 ## Code structure
 
 ```
 src/
-  index.ts          CLI entry point — parses args, builds provider/cache/roots
-  server.ts         MCP server — registers all 14 tools
-  path-utils.ts     Root-scoped path validation
+  index.ts          CLI entry point — parses args, builds provider/cache/VFS
+  server.ts         MCP server — registers all 19 tools, defines ServerContext
+  vfs.ts            Virtual Filesystem — inode overlay, dirIndex, tombstones, persistence
+  lib.ts            Library barrel — public API re-exports for npm consumers
+  path-utils.ts     Root-scoped path validation and cache key derivation
   providers/        StorageProvider implementations (S3, Azure, GCS)
   cache/            CacheStore implementations (memory, filesystem, Redis, passthrough)
   tools/            Tool handlers — one file per tool group
+    __test-helpers.ts  Shared makeProvider/makeCache/makeVfs for tests
 infra/
-  docker-compose.yml  MinIO (S3-compatible) and other emulator services
+  docker-compose.yml  Emulator services (MinIO, Azurite, fake-gcs-server, Redis)
 ```
+
+### Architecture overview
+
+All tool handlers operate through the **VirtualFS** layer, which overlays an in-memory inode table and directory index atop the cache and storage provider. This ensures unflushed writes are immediately visible to all operations (FUSE-like coherence).
+
+```
+Tool Handlers → VirtualFS → CacheStore → StorageProvider
+                  ↕ (inode/dirIndex/tombstone overlay)
+```
+
+See the [Architecture section in README.md](README.md#architecture-virtual-filesystem-vfs) for a detailed breakdown.
 
 ## Publishing to the MCP Registry
 

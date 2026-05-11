@@ -3,8 +3,27 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import { AzureProvider } from "./azure.js";
 import type { ParsedRoot } from "./interface.js";
 
-const SKIP = !process.env.AZURITE_CONNECTION_STRING;
+const CONN_STR =
+	process.env.AZURITE_CONNECTION_STRING ??
+	"DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;";
 const CONTAINER = process.env.AZURE_CONTAINER ?? "test-container";
+
+// Probe the Azurite blob endpoint — skip the suite if it is not reachable
+// or incompatible (e.g. API version mismatch).
+let reachable = false;
+try {
+	const probe = new AzureProvider({ connectionString: CONN_STR });
+	// Race against a timeout so a slow/hanging emulator doesn't block the suite.
+	await Promise.race([
+		probe.ensureContainer(CONTAINER),
+		new Promise((_, reject) =>
+			setTimeout(() => reject(new Error("probe timeout")), 3000),
+		),
+	]);
+	reachable = true;
+} catch {
+	// endpoint not reachable or incompatible — tests will be skipped
+}
 
 const root: ParsedRoot = {
 	scheme: "az",
@@ -13,13 +32,11 @@ const root: ParsedRoot = {
 	uri: `az://${CONTAINER}`,
 };
 
-describe.skipIf(SKIP)("AzureProvider integration (Azurite)", () => {
+describe.skipIf(!reachable)("AzureProvider integration (Azurite)", () => {
 	let provider: AzureProvider;
 
-	beforeAll(async () => {
-		const connStr = process.env.AZURITE_CONNECTION_STRING!;
-		provider = new AzureProvider({ connectionString: connStr });
-		await provider.ensureContainer(CONTAINER);
+	beforeAll(() => {
+		provider = new AzureProvider({ connectionString: CONN_STR });
 	});
 
 	const testKey = `integration-test/${Date.now()}/file.txt`;

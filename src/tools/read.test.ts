@@ -1,8 +1,7 @@
 // src/tools/read.test.ts
 import { describe, expect, it, mock } from "bun:test";
-import type { CacheStore } from "../cache/interface.js";
 import { parseUri } from "../path-utils.js";
-import type { StorageProvider } from "../providers/interface.js";
+import { makeCache, makeProvider, makeVfs } from "./__test-helpers.js";
 import {
 	handleReadMediaFile,
 	handleReadMultipleFiles,
@@ -10,43 +9,8 @@ import {
 } from "./read.js";
 
 const roots = [parseUri("s3://test-bucket")];
-
-function makeProvider(overrides?: Partial<StorageProvider>): StorageProvider {
-	return {
-		getObject: mock(async (_root, _key) =>
-			Buffer.from("line1\nline2\nline3\nline4\nline5"),
-		),
-		putObject: mock(async () => {}),
-		deleteObject: mock(async () => {}),
-		copyObject: mock(async () => {}),
-		headObject: mock(async (_root, key) => ({
-			key,
-			size: 29,
-			lastModified: new Date(),
-			contentType: "text/plain",
-		})),
-		listObjects: mock(async () => ({ objects: [], prefixes: [] })),
-		createPrefix: mock(async () => {}),
-		...overrides,
-	};
-}
-
-function makeCache(hit: Buffer | null = null): CacheStore {
-	return {
-		get: mock(async () => hit),
-		set: mock(async () => {}),
-		markDirty: mock(() => {}),
-		isDirty: mock(() => false),
-		dirtyEntries: mock(() => []),
-		delete: mock(async () => {}),
-		clear: mock(async () => {}),
-		flush: mock(async () => {}),
-	};
-}
-
 const ctx = (p = makeProvider(), c = makeCache()) => ({
-	provider: p,
-	cache: c,
+	vfs: makeVfs(p, c),
 	roots,
 });
 

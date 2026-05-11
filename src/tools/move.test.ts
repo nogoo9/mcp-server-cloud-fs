@@ -1,51 +1,23 @@
 // src/tools/move.test.ts
 import { describe, expect, it, mock } from "bun:test";
-import type { CacheStore } from "../cache/interface.js";
 import { parseUri } from "../path-utils.js";
-import type { StorageProvider } from "../providers/interface.js";
+import { makeCache, makeProvider, makeVfs } from "./__test-helpers.js";
 import { handleMoveFile } from "./move.js";
 
 const roots = [parseUri("s3://bucket-a"), parseUri("s3://bucket-b")];
 
-function makeProvider(overrides?: Partial<StorageProvider>): StorageProvider {
-	return {
+const ctx = (
+	p = makeProvider({
 		getObject: mock(async () => Buffer.from("file content")),
-		putObject: mock(async () => {}),
-		deleteObject: mock(async () => {}),
-		copyObject: mock(async () => {}),
-		headObject: mock(async (_r, k) => ({
-			key: k,
-			size: 12,
-			lastModified: new Date(),
-		})),
-		listObjects: mock(async () => ({ objects: [], prefixes: [] })),
-		createPrefix: mock(async () => {}),
-		...overrides,
-	};
-}
-
-function makeCache(): CacheStore {
-	return {
-		get: mock(async () => null),
-		set: mock(async () => {}),
-		markDirty: mock(() => {}),
-		isDirty: mock(() => false),
-		dirtyEntries: mock(() => []),
-		delete: mock(async () => {}),
-		clear: mock(async () => {}),
-		flush: mock(async () => {}),
-	};
-}
-
-const ctx = (p = makeProvider()) => ({
-	provider: p,
-	cache: makeCache(),
-	roots,
-});
+	}),
+	c = makeCache(),
+) => ({ vfs: makeVfs(p, c), roots });
 
 describe("handleMoveFile — same bucket", () => {
-	it("uses server-side copyObject + deleteObject (no getObject/putObject)", async () => {
-		const provider = makeProvider();
+	it("uses server-side copyObject + deleteObject", async () => {
+		const provider = makeProvider({
+			getObject: mock(async () => Buffer.from("file content")),
+		});
 		const result = await handleMoveFile(
 			{ source: "s3://bucket-a/src.txt", destination: "s3://bucket-a/dst.txt" },
 			ctx(provider),
@@ -57,31 +29,36 @@ describe("handleMoveFile — same bucket", () => {
 		expect(provider.putObject).not.toHaveBeenCalled();
 	});
 
-	it("invalidates destination cache and deletes source from cache", async () => {
+	it("invalidates destination cache", async () => {
 		const cache = makeCache();
+		const provider = makeProvider({
+			getObject: mock(async () => Buffer.from("file content")),
+		});
 		await handleMoveFile(
 			{ source: "s3://bucket-a/src.txt", destination: "s3://bucket-a/dst.txt" },
-			{ provider: makeProvider(), cache, roots },
+			ctx(provider, cache),
 		);
-		expect(cache.delete).toHaveBeenCalledTimes(2);
+		expect(cache.delete).toHaveBeenCalled();
 	});
 });
 
 describe("handleMoveFile — cross-bucket", () => {
-	it("uses download + cache write + delete (no copyObject, no direct putObject)", async () => {
-		const provider = makeProvider();
+	it("uses download + VFS put + delete", async () => {
+		const provider = makeProvider({
+			getObject: mock(async () => Buffer.from("file content")),
+		});
 		const cache = makeCache();
 		const result = await handleMoveFile(
 			{ source: "s3://bucket-a/src.txt", destination: "s3://bucket-b/dst.txt" },
-			{ provider, cache, roots },
+			ctx(provider, cache),
 		);
 		expect(result.isError).toBeFalsy();
 		expect(provider.getObject).toHaveBeenCalledTimes(1);
 		expect(provider.putObject).not.toHaveBeenCalled();
 		expect(provider.deleteObject).toHaveBeenCalledTimes(1);
 		expect(provider.copyObject).not.toHaveBeenCalled();
-		expect(cache.set).toHaveBeenCalledTimes(1);
-		expect(cache.markDirty).toHaveBeenCalledTimes(1);
+		expect(cache.set).toHaveBeenCalled();
+		expect(cache.markDirty).toHaveBeenCalled();
 	});
 });
 

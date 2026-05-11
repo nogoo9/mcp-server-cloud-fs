@@ -1,8 +1,8 @@
 // src/tools/directory.test.ts
 import { describe, expect, it, mock } from "bun:test";
-import type { CacheStore } from "../cache/interface.js";
 import { parseUri } from "../path-utils.js";
-import type { ObjectInfo, StorageProvider } from "../providers/interface.js";
+import type { ObjectInfo } from "../providers/interface.js";
+import { makeCache, makeProvider, makeVfs } from "./__test-helpers.js";
 import {
 	handleCreateDirectory,
 	handleDirectoryTree,
@@ -11,42 +11,7 @@ import {
 } from "./directory.js";
 
 const roots = [parseUri("s3://test-bucket")];
-
-function makeProvider(overrides?: Partial<StorageProvider>): StorageProvider {
-	return {
-		getObject: mock(async () => Buffer.from("")),
-		putObject: mock(async () => {}),
-		deleteObject: mock(async () => {}),
-		copyObject: mock(async () => {}),
-		headObject: mock(async (_r, k) => ({
-			key: k,
-			size: 0,
-			lastModified: new Date(),
-		})),
-		listObjects: mock(async () => ({ objects: [], prefixes: [] })),
-		createPrefix: mock(async () => {}),
-		...overrides,
-	};
-}
-
-function makeCache(): CacheStore {
-	return {
-		get: mock(async () => null),
-		set: mock(async () => {}),
-		markDirty: mock(() => {}),
-		isDirty: mock(() => false),
-		dirtyEntries: mock(() => []),
-		delete: mock(async () => {}),
-		clear: mock(async () => {}),
-		flush: mock(async () => {}),
-	};
-}
-
-const ctx = (p = makeProvider()) => ({
-	provider: p,
-	cache: makeCache(),
-	roots,
-});
+const ctx = (p = makeProvider()) => ({ vfs: makeVfs(p, makeCache()), roots });
 
 describe("handleCreateDirectory", () => {
 	it("calls createPrefix with the resolved key", async () => {

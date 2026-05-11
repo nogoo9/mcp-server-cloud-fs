@@ -1,4 +1,5 @@
 services:
+  # ── MinIO (S3-compatible) ──────────────────────────────────────────────────
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
@@ -16,16 +17,50 @@ services:
       timeout: 5s
       retries: 5
 
+  minio-init:
+    image: minio/minio:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command: >
+      -c "
+        mc alias set local http://minio:9000 minioadmin minioadmin &&
+        mc mb local/test-bucket --ignore-existing &&
+        echo 'MinIO bucket ready'
+      "
+
+  # ── Azurite (Azure Blob emulator) ─────────────────────────────────────────
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:latest
     ports:
       - "10000:10000"
       - "10001:10001"
       - "10002:10002"
-    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --skipApiVersionCheck
     volumes:
       - azurite-data:/data
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "10000"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  azurite-init:
+    image: mcr.microsoft.com/azure-cli:latest
+    depends_on:
+      azurite:
+        condition: service_healthy
+    environment:
+      AZURE_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+    command: >
+      az storage container create
+        --name test-container
+        --connection-string "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+        --output none 2>/dev/null || true &&
+      echo "Azurite container ready"
+
+  # ── fake-gcs-server (GCS emulator) ────────────────────────────────────────
   gcs-emulator:
     image: fsouza/fake-gcs-server:latest
     ports:
@@ -33,6 +68,34 @@ services:
     command: -scheme http -port 4443
     volumes:
       - gcs-data:/storage
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4443/storage/v1/b"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  gcs-init:
+    image: curlimages/curl:latest
+    depends_on:
+      gcs-emulator:
+        condition: service_healthy
+    command: >
+      curl -s -X POST
+        "http://gcs-emulator:4443/storage/v1/b?project=test"
+        -H "Content-Type: application/json"
+        -d '{"name":"test-bucket"}'
+        -o /dev/null -w "GCS bucket ready (HTTP %{http_code})\n"
+
+  # ── Redis (cache backend) ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   minio-data:

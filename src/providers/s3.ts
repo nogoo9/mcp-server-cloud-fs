@@ -7,6 +7,7 @@ import {
 	HeadObjectCommand,
 	ListObjectsV2Command,
 	PutObjectCommand,
+	type PutObjectCommandInput,
 	S3Client,
 } from "@aws-sdk/client-s3";
 import type {
@@ -18,8 +19,21 @@ import type {
 
 export class S3Provider implements StorageProvider {
 	private readonly client: S3Client;
+	/** Default fields merged into every PutObjectCommand (excluding Bucket/Key/Body/ContentType). */
+	private readonly defaultPutOptions: Omit<
+		PutObjectCommandInput,
+		"Bucket" | "Key" | "Body" | "ContentType"
+	>;
 
-	constructor(opts: { region?: string; endpoint?: string }) {
+	constructor(opts: {
+		region?: string;
+		endpoint?: string;
+		/** Override defaults for every PutObject call (e.g. `{ ServerSideEncryption: 'AES256' }`). */
+		putOptions?: Omit<
+			PutObjectCommandInput,
+			"Bucket" | "Key" | "Body" | "ContentType"
+		>;
+	}) {
 		this.client = new S3Client({
 			region: opts.region ?? "us-east-1",
 			...(opts.endpoint && {
@@ -27,6 +41,7 @@ export class S3Provider implements StorageProvider {
 				forcePathStyle: true,
 			}),
 		});
+		this.defaultPutOptions = opts.putOptions ?? {};
 	}
 
 	async getObject(
@@ -65,6 +80,7 @@ export class S3Provider implements StorageProvider {
 	): Promise<void> {
 		await this.client.send(
 			new PutObjectCommand({
+				...this.defaultPutOptions,
 				Bucket: root.bucket,
 				Key: key,
 				Body: content,
