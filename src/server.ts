@@ -111,7 +111,7 @@ async function tryRegisterShellApp(server: McpServer): Promise<void> {
 	);
 }
 
-export function createMcpServer(ctx: ServerContext): McpServer {
+export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	const server = new McpServer({
 		name: "mcp-server-cloud-fs",
 		version: "0.3.0",
@@ -127,7 +127,7 @@ export function createMcpServer(ctx: ServerContext): McpServer {
 
 	if (ctx.enableShell) {
 		registerShellTool(server, ctx);
-		void tryRegisterShellApp(server);
+		await tryRegisterShellApp(server);
 	}
 
 	return server;

@@ -238,7 +238,7 @@ async function main(): Promise<void> {
 		void flushAndExit("SIGINT");
 	});
 
-	const server = createMcpServer({
+	const server = await createMcpServer({
 		vfs,
 		roots,
 		enableDelete: args.enableDelete,
