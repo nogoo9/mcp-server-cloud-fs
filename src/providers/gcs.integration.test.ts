@@ -28,6 +28,7 @@ try {
 	};
 	const probe = new GcsProvider({
 		apiEndpoint: GCS_HOST,
+		projectId: "test-project",
 		// fake-gcs-server returns inaccurate CRC32C checksums — disable validation.
 		saveOptions: { validation: false },
 	});
@@ -51,6 +52,7 @@ describe.skipIf(!reachable)("GcsProvider integration (fake-gcs-server)", () => {
 	beforeAll(() => {
 		provider = new GcsProvider({
 			apiEndpoint: GCS_HOST,
+			projectId: "test-project",
 			// fake-gcs-server returns inaccurate CRC32C checksums — disable validation.
 			saveOptions: { validation: false },
 		});

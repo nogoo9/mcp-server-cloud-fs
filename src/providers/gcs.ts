@@ -22,11 +22,7 @@ export class GcsProvider implements StorageProvider {
 		this.storage = new Storage({
 			...(opts.projectId !== undefined && { projectId: opts.projectId }),
 			...(opts.keyFilename !== undefined && { keyFilename: opts.keyFilename }),
-			...(opts.apiEndpoint !== undefined && {
-				apiEndpoint: opts.apiEndpoint,
-				// Emulators don't issue real credentials — skip auth.
-				projectId: opts.projectId ?? "emulator-project",
-			}),
+			...(opts.apiEndpoint !== undefined && { apiEndpoint: opts.apiEndpoint }),
 		});
 
 		this.defaultSaveOptions = opts.saveOptions ?? {};
