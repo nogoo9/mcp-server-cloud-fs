@@ -429,7 +429,7 @@ This launches the Inspector connected to a memory-backed server with the shell t
 bun run inspect -- s3 s3://my-bucket --region us-east-1 --enable-shell
 
 # Or directly with npx
-npx -y @modelcontextprotocol/inspector bun run dist/index.js -- sqlite sqlite://demo --sqlite-db /tmp/test.db --enable-shell
+npx -y @modelcontextprotocol/inspector -- bun src/index.ts sqlite sqlite://demo --sqlite-db /tmp/test.db --enable-shell
 ```
 
 ### What to verify
