@@ -7,6 +7,7 @@ import { registerInfoTools } from "./tools/info.js";
 import { registerMoveTools } from "./tools/move.js";
 import { registerReadTools } from "./tools/read.js";
 import { registerSearchTools } from "./tools/search.js";
+import { registerShellTool } from "./tools/shell/index.js";
 import { registerWriteTools } from "./tools/write.js";
 import type { VirtualFS } from "./vfs.js";
 
@@ -17,12 +18,14 @@ export interface ServerContext {
 	enableDelete?: boolean;
 	/** Maximum number of objects grep_files will scan per call. Default: 1000. */
 	grepMaxObjects?: number;
+	/** Enable the shell tool. Default: false. */
+	enableShell?: boolean;
 }
 
 export function createMcpServer(ctx: ServerContext): McpServer {
 	const server = new McpServer({
 		name: "mcp-server-cloud-fs",
-		version: "0.2.0",
+		version: "0.3.0",
 	});
 
 	registerReadTools(server, ctx);
@@ -32,6 +35,10 @@ export function createMcpServer(ctx: ServerContext): McpServer {
 	registerSearchTools(server, ctx);
 	registerInfoTools(server, ctx);
 	registerExtendedTools(server, ctx);
+
+	if (ctx.enableShell) {
+		registerShellTool(server, ctx);
+	}
 
 	return server;
 }

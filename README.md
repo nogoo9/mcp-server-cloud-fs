@@ -6,7 +6,7 @@
 ![NPM Downloads](https://img.shields.io/npm/dm/%40nogoo%2Fmcp-server-cloud-fs)
 [![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue)](LICENSE)
 
-Cloud replacement for `mcp-server-filesystem` — 19 tools for S3, Azure Blob, and GCS. Also available as an npm library.
+Cloud replacement for `mcp-server-filesystem` — 20 tools for S3, Azure Blob, and GCS. Also available as an npm library.
 
 ![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?logo=amazons3&logoColor=white)
 ![Azure Blob Storage](https://img.shields.io/badge/Azure_Blob_Storage-0078D4?logo=microsoftazure&logoColor=white)
@@ -20,7 +20,7 @@ Cloud replacement for `mcp-server-filesystem` — 19 tools for S3, Azure Blob, a
 
 It also includes **5 extended tools** inspired by [claude-code's filesystem tool surface](https://github.com/codeaashu/claude-code/tree/main/src/tools): line-range reads, in-process regex search (single file and multi-file), server-side copy, and opt-in deletion.
 
-A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, and the package is available as a **programmatic npm library**.
+A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, a **shell tool** lets you run POSIX-like commands (`ls`, `grep`, `cat | wc`, etc.) against cloud storage, and the package is available as a **programmatic npm library**.
 
 ## Quick start
 
@@ -46,6 +46,7 @@ Options:
   --enable-delete                   Enable the delete_file tool (disabled by default)
   --grep-max-objects <n>            Max objects grep_files scans per call (default: 1000)
   --gcs-endpoint <url>              Custom endpoint for GCS (e.g. fake-gcs-server)
+  --enable-shell                    Enable the shell tool (disabled by default)
 ```
 
 Credentials are always sourced from SDK credential chains — never CLI flags.
@@ -144,15 +145,43 @@ const server = createMcpServer({ vfs, roots });
 // Connect to your transport of choice
 ```
 
+### Shell (programmatic)
+
+The shell executor is also available without MCP for scripting and embedding:
+
+```ts
+import {
+  executeShell,
+  VirtualFS,
+  MemoryStore,
+  S3Provider,
+  parseUri,
+} from "@nogoo9/mcp-server-cloud-fs";
+
+const roots    = [parseUri("s3://my-bucket")];
+const provider = new S3Provider({ region: "us-east-1" });
+const cache    = new MemoryStore(provider, { ttlMs: 60_000, syncDebounceMs: 2000 });
+const vfs      = new VirtualFS(provider, cache);
+await vfs.hydrate();
+
+// Run shell commands programmatically
+const listing = await executeShell("ls -l s3://my-bucket", { vfs, roots });
+const matches = await executeShell("cat s3://my-bucket/data.csv | grep ERROR | wc -l", { vfs, roots });
+console.log(listing);
+console.log(`Error count: ${matches.trim()}`);
+```
+
 ### Exported types & classes
 
 | Export | Description |
 |---|---|
 | `createMcpServer(ctx)` | Create a configured MCP server instance |
+| `executeShell(command, ctx)` | Run a POSIX-like shell command against the VFS (no MCP required) |
 | `VirtualFS` | FUSE-inspired write-back overlay (see Architecture below) |
 | `MemoryStore`, `FilesystemStore`, `createRedisStore`, `PassThroughCache` | Cache backends |
 | `S3Provider`, `AzureProvider`, `GcsProvider` | Storage provider implementations |
 | `parseUri`, `toCacheKey`, `resolveToolPath` | Path utilities |
+| `ShellContext`, `ShellCommandHandler` | Types for custom shell command extensions |
 
 ---
 
@@ -215,6 +244,39 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | `list_allowed_directories` | _(none)_ | Return the list of configured root URIs. Useful for the model to know which paths it is allowed to access. |
 
 > ✨ = Extended tool
+
+### Shell tool ⚡
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `shell` ⚡ | `command` | Execute POSIX-like shell commands against cloud storage. Supports pipes (`\|`), input redirection (`<`), and output redirection (`>`, `>>`). **Only available when the server is started with `--enable-shell`.** |
+
+**Built-in commands:** `ls`, `cat`, `head`, `tail`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `stat`, `find`, `grep`, `wc`, `du`, `echo`, `tee`, `diff`
+
+**Examples:**
+```bash
+# List files
+shell "ls -l s3://my-bucket/data/"
+
+# Pipe chain
+shell "cat s3://my-bucket/config.json | grep port | wc -l"
+
+# Output redirection
+shell "echo hello world > s3://my-bucket/greeting.txt"
+
+# Input redirection
+shell "grep error < s3://my-bucket/app.log"
+
+# Copy and move
+shell "cp s3://my-bucket/a.txt s3://my-bucket/b.txt"
+shell "mv s3://my-bucket/old.txt s3://my-bucket/new.txt"  # requires --enable-delete
+```
+
+> ⚡ = Shell tool (requires `--enable-shell`)
+> 
+> `rm` and `mv` within the shell additionally require `--enable-delete`.
+> All paths must be cloud URIs. No real shell process is spawned — commands execute in-process against the VFS.
+> `ls -l` outputs POSIX-like formatting with `----------` for permissions (cloud storage has no permission model).
 
 ---
 

@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] — 2026-05-12
+
+### Added
+
+- **`shell` tool** — execute POSIX-like shell commands against cloud object storage, giving AI agents a familiar CLI interface on top of the VFS:
+  - 17 built-in commands: `ls`, `cat`, `head`, `tail`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `stat`, `find`, `grep`, `wc`, `du`, `echo`, `tee`, `diff`
+  - **Pipe support** (`|`) — chain commands together, e.g. `cat s3://b/f | grep pattern | wc -l`
+  - **Input redirection** (`<`) — read a file as stdin for the first command
+  - **Output redirection** (`>`, `>>`) — write/append stdout to a cloud file
+  - All commands run in-process against the VFS — no real shell process is spawned
+  - `ls -l` uses POSIX-mimic formatting with `----------` for permissions (cloud has no permission model)
+  - Destructive commands (`rm`, `mv`) are gated by `--enable-delete`
+- `--enable-shell` CLI flag — opt-in to register the `shell` tool (disabled by default for safety)
+- **Programmatic API**: `executeShell(command, ctx)` exported from the npm library for use without MCP
+- `ShellContext` and `ShellCommandHandler` types exported for custom command extensions
+- 48 unit tests covering parser, all 17 commands, pipelines, redirects, and security
+
 ## [0.2.0] — 2026-05-12
 
 ### Added

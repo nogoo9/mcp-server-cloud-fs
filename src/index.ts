@@ -27,6 +27,7 @@ Options:
   --enable-delete                 Enable the delete_file tool (disabled by default)
   --grep-max-objects <n>          Max objects grep_files will scan per call (default: 1000)
   --gcs-endpoint <url>            Custom endpoint for GCS (e.g. fake-gcs-server for testing)
+  --enable-shell                  Enable the shell tool (disabled by default)
 
 Credentials are always sourced from SDK credential chains (env, ~/.aws, ADC, etc.).
 Redis URL via env: REDIS_URL (default: redis://localhost:6379)
@@ -47,6 +48,7 @@ interface CliArgs {
 	enableDelete: boolean;
 	grepMaxObjects: number;
 	gcsEndpoint?: string;
+	enableShell: boolean;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -68,6 +70,7 @@ function parseArgs(argv: string[]): CliArgs {
 	let enableDelete = false;
 	let grepMaxObjects = 1000;
 	let gcsEndpoint: string | undefined;
+	let enableShell = false;
 
 	for (let i = 1; i < args.length; i++) {
 		const arg = args[i]!;
@@ -109,6 +112,8 @@ function parseArgs(argv: string[]): CliArgs {
 			grepMaxObjects = val;
 		} else if (arg === "--gcs-endpoint") {
 			gcsEndpoint = args[++i];
+		} else if (arg === "--enable-shell") {
+			enableShell = true;
 		} else {
 			console.error(`Unknown argument: ${arg}`);
 			usage();
@@ -139,6 +144,7 @@ function parseArgs(argv: string[]): CliArgs {
 		enableDelete,
 		grepMaxObjects,
 		...(gcsEndpoint !== undefined && { gcsEndpoint }),
+		enableShell,
 	};
 }
 
@@ -212,6 +218,7 @@ async function main(): Promise<void> {
 		roots,
 		enableDelete: args.enableDelete,
 		grepMaxObjects: args.grepMaxObjects,
+		enableShell: args.enableShell,
 	});
 	const transport = new StdioServerTransport();
 	await server.connect(transport);

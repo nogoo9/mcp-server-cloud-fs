@@ -21,5 +21,7 @@ export type {
 export { S3Provider } from "./providers/s3.js";
 export type { ServerContext } from "./server.js";
 export { createMcpServer } from "./server.js";
+export { executeShell } from "./tools/shell/index.js";
+export type { ShellCommandHandler, ShellContext } from "./tools/shell/types.js";
 export type { VfsStat } from "./vfs.js";
 export { VirtualFS } from "./vfs.js";
