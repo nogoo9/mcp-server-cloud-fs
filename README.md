@@ -6,7 +6,7 @@
 ![NPM Downloads](https://img.shields.io/npm/dm/%40nogoo%2Fmcp-server-cloud-fs)
 [![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue)](LICENSE)
 
-Drop-in cloud replacement for `mcp-server-filesystem` — 19 MCP tools (14 baseline + 5 extended), same schema, backed by S3, Azure Blob, or GCS. Also available as an npm library.
+Cloud replacement for `mcp-server-filesystem` — 19 tools for S3, Azure Blob, and GCS. Also available as an npm library.
 
 ![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?logo=amazons3&logoColor=white)
 ![Azure Blob Storage](https://img.shields.io/badge/Azure_Blob_Storage-0078D4?logo=microsoftazure&logoColor=white)

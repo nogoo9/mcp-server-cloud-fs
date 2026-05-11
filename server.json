@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json",
   "name": "io.github.nogoo9/mcp-server-cloud-fs",
-  "description": "Drop-in cloud replacement for mcp-server-filesystem — 19 MCP tools (14 baseline + 5 extended) over S3, Azure Blob, and GCS",
+  "description": "Cloud replacement for mcp-server-filesystem \u2014 19 tools for S3, Azure Blob, and GCS",
   "repository": {
     "url": "https://github.com/nogoo9/mcp-server-cloud-fs",
     "source": "github"

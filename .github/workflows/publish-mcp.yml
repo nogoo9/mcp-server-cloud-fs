@@ -8,6 +8,8 @@ on:
 jobs:
   publish-mcp:
     runs-on: ubuntu-latest
+    environment:
+      name: npm
     permissions:
       id-token: write
       contents: read

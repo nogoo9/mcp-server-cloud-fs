@@ -22,7 +22,7 @@ export interface ServerContext {
 export function createMcpServer(ctx: ServerContext): McpServer {
 	const server = new McpServer({
 		name: "mcp-server-cloud-fs",
-		version: "0.3.0",
+		version: "0.2.0",
 	});
 
 	registerReadTools(server, ctx);
