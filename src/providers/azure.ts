@@ -1,6 +1,7 @@
 // src/providers/azure.ts
 import {
 	BlobServiceClient,
+	type BlockBlobUploadOptions,
 	StorageSharedKeyCredential,
 } from "@azure/storage-blob";
 import type {
@@ -12,11 +13,15 @@ import type {
 
 export class AzureProvider implements StorageProvider {
 	private readonly client: BlobServiceClient;
+	/** Default options merged into every BlockBlobClient.upload() call. */
+	private readonly defaultUploadOptions: BlockBlobUploadOptions;
 
 	constructor(opts: {
 		connectionString?: string;
 		accountName?: string;
 		accountKey?: string;
+		/** Override defaults for every upload call (e.g. `{ tier: 'Cool' }`). */
+		uploadOptions?: BlockBlobUploadOptions;
 	}) {
 		if (opts.connectionString) {
 			this.client = BlobServiceClient.fromConnectionString(
@@ -37,6 +42,7 @@ export class AzureProvider implements StorageProvider {
 					"For DefaultAzureCredential, set AZURE_STORAGE_CONNECTION_STRING.",
 			);
 		}
+		this.defaultUploadOptions = opts.uploadOptions ?? {};
 	}
 
 	async ensureContainer(containerName: string): Promise<void> {
@@ -81,6 +87,7 @@ export class AzureProvider implements StorageProvider {
 			.getContainerClient(root.bucket)
 			.getBlockBlobClient(key);
 		await blobClient.upload(content, content.length, {
+			...this.defaultUploadOptions,
 			blobHTTPHeaders: { blobContentType: inferContentType(key) },
 		});
 	}

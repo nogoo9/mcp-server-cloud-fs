@@ -1,5 +1,5 @@
 // src/providers/gcs.ts
-import { Storage } from "@google-cloud/storage";
+import { Storage, type SaveOptions } from "@google-cloud/storage";
 import type {
 	ListResult,
 	ObjectInfo,
@@ -9,12 +9,15 @@ import type {
 
 export class GcsProvider implements StorageProvider {
 	private readonly storage: Storage;
-	private readonly emulatorMode: boolean;
+	/** Default options merged into every `.save()` call. */
+	private readonly defaultSaveOptions: SaveOptions;
 
 	constructor(opts: {
 		projectId?: string;
 		keyFilename?: string;
 		apiEndpoint?: string;
+		/** Override defaults for every `save()` call (e.g. `{ validation: false }`). */
+		saveOptions?: SaveOptions;
 	}) {
 		this.storage = new Storage({
 			...(opts.projectId !== undefined && { projectId: opts.projectId }),
@@ -25,7 +28,13 @@ export class GcsProvider implements StorageProvider {
 				projectId: opts.projectId ?? "emulator-project",
 			}),
 		});
-		this.emulatorMode = opts.apiEndpoint !== undefined;
+
+		// When apiEndpoint is set (emulator mode), disable CRC32C validation by
+		// default because fake-gcs-server returns inaccurate checksums.
+		// Callers can override this by passing explicit saveOptions.
+		const emulatorDefaults: SaveOptions =
+			opts.apiEndpoint !== undefined ? { validation: false } : {};
+		this.defaultSaveOptions = { ...emulatorDefaults, ...opts.saveOptions };
 	}
 
 	async ensureBucket(bucketName: string): Promise<void> {
@@ -74,9 +83,7 @@ export class GcsProvider implements StorageProvider {
 			.file(key)
 			.save(content, {
 				contentType: inferContentType(key),
-				// Disable checksum validation for emulators — fake-gcs-server does not
-				// return accurate CRC32C values, causing spurious integrity failures.
-				...(this.emulatorMode && { validation: false }),
+				...this.defaultSaveOptions,
 			});
 	}
 
@@ -158,8 +165,8 @@ export class GcsProvider implements StorageProvider {
 
 	async createPrefix(root: ParsedRoot, prefix: string): Promise<void> {
 		const key = prefix.endsWith("/") ? prefix : `${prefix}/`;
-		// Use a 1-byte placeholder — GCS SDK upload integrity check fails
-		// with 0-byte content against fake-gcs-server and some real GCS edge cases.
+		// Use a 1-byte placeholder — 0-byte uploads can trigger checksum edge cases
+		// in some GCS emulators.
 		await this.putObject(root, key, Buffer.alloc(1));
 	}
 }
