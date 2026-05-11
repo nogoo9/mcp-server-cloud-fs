@@ -1,5 +1,5 @@
 // src/providers/gcs.ts
-import { Storage } from "@google-cloud/storage";
+import { type SaveOptions, Storage } from "@google-cloud/storage";
 import type {
 	ListResult,
 	ObjectInfo,
@@ -9,12 +9,23 @@ import type {
 
 export class GcsProvider implements StorageProvider {
 	private readonly storage: Storage;
+	/** Default options merged into every `.save()` call. */
+	private readonly defaultSaveOptions: SaveOptions;
 
-	constructor(opts: { projectId?: string; keyFilename?: string }) {
+	constructor(opts: {
+		projectId?: string;
+		keyFilename?: string;
+		apiEndpoint?: string;
+		/** Override defaults for every `save()` call (e.g. `{ validation: false }`). */
+		saveOptions?: SaveOptions;
+	}) {
 		this.storage = new Storage({
 			...(opts.projectId !== undefined && { projectId: opts.projectId }),
 			...(opts.keyFilename !== undefined && { keyFilename: opts.keyFilename }),
+			...(opts.apiEndpoint !== undefined && { apiEndpoint: opts.apiEndpoint }),
 		});
+
+		this.defaultSaveOptions = opts.saveOptions ?? {};
 	}
 
 	async ensureBucket(bucketName: string): Promise<void> {
@@ -63,6 +74,7 @@ export class GcsProvider implements StorageProvider {
 			.file(key)
 			.save(content, {
 				contentType: inferContentType(key),
+				...this.defaultSaveOptions,
 			});
 	}
 
@@ -144,7 +156,9 @@ export class GcsProvider implements StorageProvider {
 
 	async createPrefix(root: ParsedRoot, prefix: string): Promise<void> {
 		const key = prefix.endsWith("/") ? prefix : `${prefix}/`;
-		await this.putObject(root, key, Buffer.alloc(0));
+		// Use a 1-byte placeholder — 0-byte uploads can trigger checksum edge cases
+		// in some GCS emulators.
+		await this.putObject(root, key, Buffer.alloc(1));
 	}
 }
 

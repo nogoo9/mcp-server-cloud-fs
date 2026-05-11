@@ -3,9 +3,19 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import type { ParsedRoot } from "./interface.js";
 import { S3Provider } from "./s3.js";
 
-const SKIP = !process.env.MINIO_ENDPOINT;
 const ENDPOINT = process.env.MINIO_ENDPOINT ?? "http://localhost:9000";
 const BUCKET = process.env.MINIO_BUCKET ?? "test-bucket";
+
+// Probe the endpoint — skip the suite if it is not reachable.
+let reachable = false;
+try {
+	const res = await fetch(`${ENDPOINT}/minio/health/live`, {
+		signal: AbortSignal.timeout(1000),
+	});
+	reachable = res.ok;
+} catch {
+	// endpoint not reachable — tests will be skipped
+}
 
 const root: ParsedRoot = {
 	scheme: "s3",
@@ -14,7 +24,7 @@ const root: ParsedRoot = {
 	uri: `s3://${BUCKET}`,
 };
 
-describe.skipIf(SKIP)("S3Provider integration (MinIO)", () => {
+describe.skipIf(!reachable)("S3Provider integration (MinIO)", () => {
 	let provider: S3Provider;
 
 	beforeAll(() => {

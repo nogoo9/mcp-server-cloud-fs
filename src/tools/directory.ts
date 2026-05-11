@@ -3,17 +3,12 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { minimatch } from "minimatch";
 import { z } from "zod";
-import type { CacheStore } from "../cache/interface.js";
 import { resolveToolPath } from "../path-utils.js";
-import type {
-	ObjectInfo,
-	ParsedRoot,
-	StorageProvider,
-} from "../providers/interface.js";
+import type { ObjectInfo, ParsedRoot } from "../providers/interface.js";
+import type { VirtualFS } from "../vfs.js";
 
 type Ctx = {
-	provider: StorageProvider;
-	cache: CacheStore;
+	vfs: VirtualFS;
 	roots: ParsedRoot[];
 };
 type ToolResult = {
@@ -27,10 +22,11 @@ export async function handleCreateDirectory(
 ): Promise<ToolResult> {
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
-		await ctx.provider.createPrefix(root, key);
+		const prefix = key.endsWith("/") ? key : `${key}/`;
+		await ctx.vfs.createPrefix(root, prefix);
 		return {
 			content: [
-				{ type: "text", text: `Successfully created directory: ${args.path}` },
+				{ type: "text", text: `Successfully created directory ${args.path}` },
 			],
 		};
 	} catch (err) {
@@ -48,11 +44,7 @@ export async function handleListDirectory(
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
 		const prefix = key ? `${key}/` : "";
-		const { objects, prefixes } = await ctx.provider.listObjects(
-			root,
-			prefix,
-			"/",
-		);
+		const { objects, prefixes } = await ctx.vfs.list(root, prefix, "/");
 		const lines: string[] = [
 			...prefixes.map((p) => `[DIR] ${p}`),
 			...objects
@@ -75,11 +67,7 @@ export async function handleListDirectoryWithSizes(
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
 		const prefix = key ? `${key}/` : "";
-		const { objects, prefixes } = await ctx.provider.listObjects(
-			root,
-			prefix,
-			"/",
-		);
+		const { objects, prefixes } = await ctx.vfs.list(root, prefix, "/");
 		const sortBy = args.sortBy ?? "name";
 		const sorted = [...objects]
 			.filter((o) => !o.key.endsWith("/"))
@@ -106,7 +94,7 @@ export async function handleDirectoryTree(
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
 		const prefix = key ? `${key}/` : "";
-		const { objects } = await ctx.provider.listObjects(root, prefix);
+		const { objects } = await ctx.vfs.list(root, prefix);
 		const exclude = args.excludePatterns ?? [];
 		const filtered = objects.filter(
 			(o) =>

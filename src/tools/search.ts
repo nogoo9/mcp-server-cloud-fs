@@ -3,13 +3,12 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { minimatch } from "minimatch";
 import { z } from "zod";
-import type { CacheStore } from "../cache/interface.js";
 import { resolveToolPath } from "../path-utils.js";
-import type { ParsedRoot, StorageProvider } from "../providers/interface.js";
+import type { ParsedRoot } from "../providers/interface.js";
+import type { VirtualFS } from "../vfs.js";
 
 type Ctx = {
-	provider: StorageProvider;
-	cache: CacheStore;
+	vfs: VirtualFS;
 	roots: ParsedRoot[];
 };
 type ToolResult = {
@@ -28,7 +27,7 @@ export async function handleSearchFiles(
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
 		const prefix = key ? `${key}/` : "";
-		const { objects } = await ctx.provider.listObjects(root, prefix);
+		const { objects } = await ctx.vfs.list(root, prefix);
 		const exclude = args.excludePatterns ?? [];
 
 		const matches = objects
