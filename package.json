@@ -2,7 +2,7 @@
   "name": "@nogoo9/mcp-server-cloud-fs",
   "mcpName": "io.github.nogoo9/mcp-server-cloud-fs",
   "version": "0.2.0",
-  "description": "Drop-in cloud replacement for mcp-server-filesystem — 19 MCP tools (14 baseline + 5 extended) over S3, Azure Blob, and GCS",
+  "description": "Drop-in cloud replacement for mcp-server-filesystem \u2014 19 MCP tools (14 baseline + 5 extended) over S3, Azure Blob, and GCS",
   "type": "module",
   "bin": {
     "cloud-fs-mcp": "dist/index.js"
@@ -14,8 +14,10 @@
     "lint": "biome check src/",
     "format": "biome format --write src/",
     "check": "biome check --write src/",
-    "test": "bun test",
+    "test": "bun test src/cache src/providers src/tools src/path-utils.test.ts",
     "test:integration": "bun test src/providers/*.integration.test.ts",
+    "test:e2e": "bun test src/server.e2e.test.ts --timeout 30000",
+    "test:all": "bun test --timeout 30000",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "infra:setup": "docker compose -f infra/docker-compose.yml up -d",
@@ -45,7 +47,7 @@
     "zod": "^3.0.0"
   },
   "peerDependencies": {
-    "ioredis": "^5.0.0"
+    "ioredis": ""
   },
   "peerDependenciesMeta": {
     "ioredis": {
@@ -55,6 +57,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
     "@types/bun": "latest",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "ioredis": "^5.0.0"
   }
 }

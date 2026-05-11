@@ -100,7 +100,6 @@ export async function createRedisStore(
 ): Promise<RedisStore> {
 	let ioredis: { default: new (url: string) => RedisClient };
 	try {
-		// @ts-expect-error - ioredis is an optional peer dependency
 		ioredis = await import("ioredis");
 	} catch {
 		console.error(

@@ -86,6 +86,17 @@ services:
         -d '{"name":"test-bucket"}'
         -o /dev/null -w "GCS bucket ready (HTTP %{http_code})\n"
 
+  # ── Redis (cache backend) ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   minio-data:
   azurite-data:
