@@ -1,18 +1,18 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json",
   "name": "io.github.nogoo9/mcp-server-cloud-fs",
-  "description": "Drop-in cloud replacement for mcp-server-filesystem — all 14 MCP tools over S3, Azure Blob, and GCS",
+  "description": "Drop-in cloud replacement for mcp-server-filesystem — 19 MCP tools (14 baseline + 5 extended) over S3, Azure Blob, and GCS",
   "repository": {
     "url": "https://github.com/nogoo9/mcp-server-cloud-fs",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@nogoo9/mcp-server-cloud-fs",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "runtimeHint": "bunx",
       "transport": {
         "type": "stdio"
@@ -63,6 +63,19 @@
           "name": "--cache-dir",
           "valueHint": "/tmp/cloud-fs-cache",
           "description": "Directory for filesystem cache store (required when --cache-store fs)"
+        },
+        {
+          "type": "named",
+          "name": "--enable-delete",
+          "description": "Enable the delete_file tool (disabled by default for safety)",
+          "isFlag": true
+        },
+        {
+          "type": "named",
+          "name": "--grep-max-objects",
+          "valueHint": "1000",
+          "description": "Maximum number of objects grep_files will scan per call (default: 1000)",
+          "default": "1000"
         }
       ],
       "environmentVariables": [

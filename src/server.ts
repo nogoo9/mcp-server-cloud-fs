@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CacheStore } from "./cache/interface.js";
 import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
 import { registerDirectoryTools } from "./tools/directory.js";
+import { registerExtendedTools } from "./tools/extended.js";
 import { registerInfoTools } from "./tools/info.js";
 import { registerMoveTools } from "./tools/move.js";
 import { registerReadTools } from "./tools/read.js";
@@ -13,6 +14,10 @@ export interface ServerContext {
 	provider: StorageProvider;
 	cache: CacheStore;
 	roots: ParsedRoot[];
+	/** Enable the delete_file tool. Default: false. */
+	enableDelete?: boolean;
+	/** Maximum number of objects grep_files will scan per call. Default: 1000. */
+	grepMaxObjects?: number;
 }
 
 export function createMcpServer(ctx: ServerContext): McpServer {
@@ -27,6 +32,7 @@ export function createMcpServer(ctx: ServerContext): McpServer {
 	registerMoveTools(server, ctx);
 	registerSearchTools(server, ctx);
 	registerInfoTools(server, ctx);
+	registerExtendedTools(server, ctx);
 
 	return server;
 }

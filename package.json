@@ -1,8 +1,8 @@
 {
   "name": "@nogoo9/mcp-server-cloud-fs",
   "mcpName": "io.github.nogoo9/mcp-server-cloud-fs",
-  "version": "0.1.0",
-  "description": "Drop-in cloud replacement for mcp-server-filesystem — all 14 MCP tools over S3, Azure Blob, and GCS",
+  "version": "0.2.0",
+  "description": "Drop-in cloud replacement for mcp-server-filesystem — 19 MCP tools (14 baseline + 5 extended) over S3, Azure Blob, and GCS",
   "type": "module",
   "bin": {
     "cloud-fs-mcp": "dist/index.js"

@@ -23,6 +23,8 @@ Options:
   --sync-debounce <ms>            Write debounce window in ms (default: 2000)
   --cache-dir <path>              Required when --cache-store fs
   --no-cache                      Disable caching (pass-through mode)
+  --enable-delete                 Enable the delete_file tool (disabled by default)
+  --grep-max-objects <n>          Max objects grep_files will scan per call (default: 1000)
 
 Credentials are always sourced from SDK credential chains (env, ~/.aws, ADC, etc.).
 Redis URL via env: REDIS_URL (default: redis://localhost:6379)
@@ -40,6 +42,8 @@ interface CliArgs {
 	syncDebounceMs: number;
 	cacheDir?: string;
 	noCache: boolean;
+	enableDelete: boolean;
+	grepMaxObjects: number;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -58,6 +62,8 @@ function parseArgs(argv: string[]): CliArgs {
 	let syncDebounceMs = 2_000;
 	let cacheDir: string | undefined;
 	let noCache = false;
+	let enableDelete = false;
+	let grepMaxObjects = 1000;
 
 	for (let i = 1; i < args.length; i++) {
 		const arg = args[i]!;
@@ -86,6 +92,15 @@ function parseArgs(argv: string[]): CliArgs {
 			cacheDir = args[++i];
 		} else if (arg === "--no-cache") {
 			noCache = true;
+		} else if (arg === "--enable-delete") {
+			enableDelete = true;
+		} else if (arg === "--grep-max-objects") {
+			const val = Number(args[++i]);
+			if (!Number.isInteger(val) || val < 1) {
+				console.error(`Invalid --grep-max-objects value: must be a positive integer`);
+				usage();
+			}
+			grepMaxObjects = val;
 		} else {
 			console.error(`Unknown argument: ${arg}`);
 			usage();
@@ -113,6 +128,8 @@ function parseArgs(argv: string[]): CliArgs {
 		syncDebounceMs,
 		...(cacheDir !== undefined && { cacheDir }),
 		noCache,
+		enableDelete,
+		grepMaxObjects,
 	};
 }
 
@@ -176,7 +193,13 @@ async function main(): Promise<void> {
 		void flushAndExit("SIGINT");
 	});
 
-	const server = createMcpServer({ provider, cache, roots });
+	const server = createMcpServer({
+		provider,
+		cache,
+		roots,
+		enableDelete: args.enableDelete,
+		grepMaxObjects: args.grepMaxObjects,
+	});
 	const transport = new StdioServerTransport();
 	await server.connect(transport);
 	console.error(
