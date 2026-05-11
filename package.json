@@ -18,7 +18,8 @@
     "test:integration": "bun test src/providers/*.integration.test.ts",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
-    "infra:setup": "bun run infra:up && docker compose -f infra/docker-compose.yml exec minio mc alias set local http://localhost:9000 minioadmin minioadmin && docker compose -f infra/docker-compose.yml exec minio mc mb local/test-bucket --ignore-existing"
+    "infra:setup": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs"
   },
   "files": [
     "dist/"
