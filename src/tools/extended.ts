@@ -4,13 +4,12 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { minimatch } from "minimatch";
 import { z } from "zod";
-import type { CacheStore } from "../cache/interface.js";
 import { resolveToolPath, toCacheKey } from "../path-utils.js";
-import type { ListResult, ParsedRoot, StorageProvider } from "../providers/interface.js";
+import type { ParsedRoot } from "../providers/interface.js";
+import type { VirtualFS } from "../vfs.js";
 
 type Ctx = {
-	provider: StorageProvider;
-	cache: CacheStore;
+	vfs: VirtualFS;
 	roots: ParsedRoot[];
 	enableDelete?: boolean;
 	grepMaxObjects?: number;
@@ -24,40 +23,6 @@ type TextToolResult = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-async function getObjectWithCache(
-	path: string,
-	ctx: Ctx,
-): Promise<{ buffer: Buffer; root: ParsedRoot; key: string }> {
-	const { root, key } = resolveToolPath(ctx.roots, path);
-	const cacheKey = toCacheKey(root, key);
-	let buffer = await ctx.cache.get(cacheKey);
-	if (buffer === null) {
-		buffer = await ctx.provider.getObject(root, key);
-		await ctx.cache.set(cacheKey, buffer);
-	}
-	return { buffer, root, key };
-}
-
-/**
- * Cache listObjects results using the same CacheStore.
- * Key format: `list://<scheme>://<bucket>/<prefix>` — the `list:` prefix
- * avoids collisions with object-content cache keys.
- */
-async function listObjectsWithCache(
-	root: ParsedRoot,
-	prefix: string,
-	ctx: Ctx,
-): Promise<ListResult> {
-	const listCacheKey = `list://${root.scheme}://${root.bucket}/${prefix}`;
-	const cached = await ctx.cache.get(listCacheKey);
-	if (cached !== null) {
-		return JSON.parse(cached.toString("utf8")) as ListResult;
-	}
-	const result = await ctx.provider.listObjects(root, prefix);
-	await ctx.cache.set(listCacheKey, Buffer.from(JSON.stringify(result)));
-	return result;
-}
 
 function ok(text: string): TextToolResult {
 	return { content: [{ type: "text", text }] };
@@ -76,7 +41,8 @@ export async function handleReadFileRange(
 	ctx: Ctx,
 ): Promise<TextToolResult> {
 	try {
-		const { buffer } = await getObjectWithCache(args.path, ctx);
+		const { root, key } = resolveToolPath(ctx.roots, args.path);
+		const buffer = await ctx.vfs.get(root, key);
 		const lines = buffer.toString("utf8").split("\n");
 		const totalLines = lines.length;
 		// offset is 1-based (following claude-code FileReadTool convention)
@@ -105,7 +71,8 @@ export async function handleGrepFile(
 	ctx: Ctx,
 ): Promise<TextToolResult> {
 	try {
-		const { buffer } = await getObjectWithCache(args.path, ctx);
+		const { root, key } = resolveToolPath(ctx.roots, args.path);
+		const buffer = await ctx.vfs.get(root, key);
 		const flags = args.case_insensitive ? "i" : "";
 		const re = new RegExp(args.pattern, flags);
 		const lines = buffer.toString("utf8").split("\n");
@@ -140,7 +107,7 @@ export async function handleGrepFiles(
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
 		const prefix = key ? `${key}/` : "";
-		const { objects } = await listObjectsWithCache(root, prefix, ctx);
+		const { objects } = await ctx.vfs.list(root, prefix);
 
 		const maxObjects = args.max_objects ?? ctx.grepMaxObjects ?? 1000;
 		const flags = args.case_insensitive ? "i" : "";
@@ -165,12 +132,7 @@ export async function handleGrepFiles(
 			await Promise.allSettled(
 				capped.map(async (obj) => {
 					try {
-						const cacheKey = toCacheKey(root, obj.key);
-						let buf = await ctx.cache.get(cacheKey);
-						if (buf === null) {
-							buf = await ctx.provider.getObject(root, obj.key);
-							await ctx.cache.set(cacheKey, buf);
-						}
+						const buf = await ctx.vfs.get(root, obj.key);
 						const text = buf.toString("utf8");
 						if (re.test(text)) {
 							matchingPaths.push(`${root.scheme}://${root.bucket}/${obj.key}`);
@@ -195,12 +157,7 @@ export async function handleGrepFiles(
 		await Promise.allSettled(
 			capped.map(async (obj) => {
 				try {
-					const cacheKey = toCacheKey(root, obj.key);
-					let buf = await ctx.cache.get(cacheKey);
-					if (buf === null) {
-						buf = await ctx.provider.getObject(root, obj.key);
-						await ctx.cache.set(cacheKey, buf);
-					}
+					const buf = await ctx.vfs.get(root, obj.key);
 					const lines = buf.toString("utf8").split("\n");
 					for (let i = 0; i < lines.length; i++) {
 						if (re.test(lines[i]!)) {
@@ -244,18 +201,7 @@ export async function handleCopyFile(
 			args.destination,
 		);
 
-		if (srcRoot.bucket === dstRoot.bucket) {
-			// Server-side copy — efficient, no data transfer through client
-			await ctx.provider.copyObject(srcRoot, srcKey, dstKey);
-			// Evict destination from cache so next read gets the fresh copy
-			await ctx.cache.delete(toCacheKey(dstRoot, dstKey));
-		} else {
-			// Cross-bucket: download + upload
-			const buffer = await ctx.provider.getObject(srcRoot, srcKey);
-			const dstCacheKey = toCacheKey(dstRoot, dstKey);
-			await ctx.cache.set(dstCacheKey, buffer);
-			ctx.cache.markDirty(dstCacheKey, dstRoot, dstKey);
-		}
+		await ctx.vfs.copy(srcRoot, srcKey, dstRoot, dstKey);
 
 		return ok(`Successfully copied ${args.source} to ${args.destination}`);
 	} catch (e) {
@@ -273,8 +219,7 @@ export async function handleDeleteFile(
 ): Promise<TextToolResult> {
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
-		await ctx.provider.deleteObject(root, key);
-		await ctx.cache.delete(toCacheKey(root, key));
+		await ctx.vfs.remove(root, key);
 		return ok(`Successfully deleted ${args.path}`);
 	} catch (e) {
 		return err((e as Error).message);

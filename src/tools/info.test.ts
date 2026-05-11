@@ -1,8 +1,7 @@
 // src/tools/info.test.ts
 import { describe, expect, it, mock } from "bun:test";
-import type { CacheStore } from "../cache/interface.js";
 import { parseUri } from "../path-utils.js";
-import type { StorageProvider } from "../providers/interface.js";
+import { makeCache, makeProvider, makeVfs } from "./__test-helpers.js";
 import { handleGetFileInfo, handleListAllowedDirectories } from "./info.js";
 
 const roots = [
@@ -10,37 +9,14 @@ const roots = [
 	parseUri("s3://other-bucket"),
 ];
 
-function makeProvider(): StorageProvider {
-	return {
-		getObject: mock(async () => Buffer.from("")),
-		putObject: mock(async () => {}),
-		deleteObject: mock(async () => {}),
-		copyObject: mock(async () => {}),
-		headObject: mock(async (_r, key) => ({
-			key,
-			size: 1234,
-			lastModified: new Date("2025-06-15T12:00:00Z"),
-			contentType: "text/plain",
-		})),
-		listObjects: mock(async () => ({ objects: [], prefixes: [] })),
-		createPrefix: mock(async () => {}),
-	};
-}
-
-function makeCache(): CacheStore {
-	return {
-		get: mock(async () => null),
-		set: mock(async () => {}),
-		markDirty: mock(() => {}),
-		isDirty: mock(() => false),
-		dirtyEntries: mock(() => []),
-		delete: mock(async () => {}),
-		clear: mock(async () => {}),
-		flush: mock(async () => {}),
-	};
-}
-
-const ctx = () => ({ provider: makeProvider(), cache: makeCache(), roots });
+const ctx = (p = makeProvider({
+	headObject: mock(async (_r, key) => ({
+		key,
+		size: 1234,
+		lastModified: new Date("2025-06-15T12:00:00Z"),
+		contentType: "text/plain",
+	})),
+})) => ({ vfs: makeVfs(p, makeCache()), roots });
 
 describe("handleGetFileInfo", () => {
 	it("returns file metadata including size, lastModified, contentType", async () => {
@@ -75,7 +51,7 @@ describe("handleListAllowedDirectories", () => {
 		const provider = makeProvider();
 		await handleListAllowedDirectories(
 			{},
-			{ provider, cache: makeCache(), roots },
+			{ vfs: makeVfs(provider), roots },
 		);
 		expect(provider.headObject).not.toHaveBeenCalled();
 		expect(provider.listObjects).not.toHaveBeenCalled();

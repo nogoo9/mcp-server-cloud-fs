@@ -2,13 +2,12 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { CacheStore } from "../cache/interface.js";
-import { resolveToolPath, toCacheKey } from "../path-utils.js";
-import type { ParsedRoot, StorageProvider } from "../providers/interface.js";
+import { resolveToolPath } from "../path-utils.js";
+import type { ParsedRoot } from "../providers/interface.js";
+import type { VirtualFS } from "../vfs.js";
 
 type Ctx = {
-	provider: StorageProvider;
-	cache: CacheStore;
+	vfs: VirtualFS;
 	roots: ParsedRoot[];
 };
 type ToolResult = {
@@ -22,10 +21,8 @@ export async function handleWriteFile(
 ): Promise<ToolResult> {
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
-		const cacheKey = toCacheKey(root, key);
 		const buffer = Buffer.from(args.content, "utf8");
-		await ctx.cache.set(cacheKey, buffer);
-		ctx.cache.markDirty(cacheKey, root, key);
+		await ctx.vfs.put(root, key, buffer);
 		return {
 			content: [{ type: "text", text: `Successfully wrote to ${args.path}` }],
 		};
@@ -47,13 +44,9 @@ export async function handleEditFile(
 ): Promise<ToolResult> {
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
-		const cacheKey = toCacheKey(root, key);
 
-		// Read — cache first
-		let buffer = await ctx.cache.get(cacheKey);
-		if (buffer === null) {
-			buffer = await ctx.provider.getObject(root, key);
-		}
+		// Read via VFS (cache-first, then provider)
+		const buffer = await ctx.vfs.get(root, key);
 		const original = buffer.toString("utf8");
 		let content = original;
 
@@ -76,8 +69,7 @@ export async function handleEditFile(
 		}
 
 		const newBuffer = Buffer.from(content, "utf8");
-		await ctx.cache.set(cacheKey, newBuffer);
-		ctx.cache.markDirty(cacheKey, root, key);
+		await ctx.vfs.put(root, key, newBuffer);
 		return {
 			content: [{ type: "text", text: `Successfully edited ${args.path}` }],
 		};

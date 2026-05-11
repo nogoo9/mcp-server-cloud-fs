@@ -7,14 +7,23 @@
   "bin": {
     "cloud-fs-mcp": "dist/index.js"
   },
+  "main": "dist/lib.js",
+  "types": "dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    }
+  },
   "scripts": {
-    "build": "bun build src/index.ts --outfile dist/index.js --target bun --minify && chmod +x dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
     "prepublishOnly": "bun run build",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/",
     "format": "biome format --write src/",
     "check": "biome check --write src/",
-    "test": "bun test src/cache src/providers src/tools src/path-utils.test.ts",
+    "test": "bun test src/cache src/providers src/tools src/path-utils.test.ts src/vfs.test.ts",
+    "test:coverage": "bun test --coverage --coverage-reporter=lcov --coverage-dir=coverage",
     "test:integration": "bun test src/providers/*.integration.test.ts",
     "test:e2e": "bun test src/server.e2e.test.ts --timeout 30000",
     "test:all": "bun test --timeout 30000",
@@ -24,7 +33,10 @@
     "infra:logs": "docker compose -f infra/docker-compose.yml logs"
   },
   "files": [
-    "dist/"
+    "dist/",
+    "src/",
+    "!src/**/*.test.ts",
+    "!src/**/__test-helpers.ts"
   ],
   "license": "PolyForm-Shield-1.0.0",
   "publishConfig": {

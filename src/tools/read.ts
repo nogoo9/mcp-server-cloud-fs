@@ -2,13 +2,12 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { CacheStore } from "../cache/interface.js";
-import { resolveToolPath, toCacheKey } from "../path-utils.js";
-import type { ParsedRoot, StorageProvider } from "../providers/interface.js";
+import { resolveToolPath } from "../path-utils.js";
+import type { ParsedRoot } from "../providers/interface.js";
+import type { VirtualFS } from "../vfs.js";
 
 type Ctx = {
-	provider: StorageProvider;
-	cache: CacheStore;
+	vfs: VirtualFS;
 	roots: ParsedRoot[];
 };
 type TextContent = { type: "text"; text: string };
@@ -18,7 +17,7 @@ type ToolResult = {
 	isError?: boolean;
 };
 
-async function readWithCache(
+async function readWithVfs(
 	path: string,
 	ctx: Ctx,
 ): Promise<{
@@ -27,12 +26,7 @@ async function readWithCache(
 	key: string;
 }> {
 	const { root, key } = resolveToolPath(ctx.roots, path);
-	const cacheKey = toCacheKey(root, key);
-	let buffer = await ctx.cache.get(cacheKey);
-	if (buffer === null) {
-		buffer = await ctx.provider.getObject(root, key);
-		await ctx.cache.set(cacheKey, buffer);
-	}
+	const buffer = await ctx.vfs.get(root, key);
 	return { buffer, root, key };
 }
 
@@ -41,7 +35,7 @@ export async function handleReadTextFile(
 	ctx: Ctx,
 ): Promise<ToolResult> {
 	try {
-		const { buffer } = await readWithCache(args.path, ctx);
+		const { buffer } = await readWithVfs(args.path, ctx);
 		const text = buffer.toString("utf8");
 		if (args.head !== undefined) {
 			return {
@@ -78,7 +72,7 @@ export async function handleReadMediaFile(
 	ctx: Ctx,
 ): Promise<ToolResult> {
 	try {
-		const { buffer, key } = await readWithCache(args.path, ctx);
+		const { buffer, key } = await readWithVfs(args.path, ctx);
 		const mimeType = inferMimeType(key);
 		return {
 			content: [{ type: "image", data: buffer.toString("base64"), mimeType }],
@@ -97,7 +91,7 @@ export async function handleReadMultipleFiles(
 ): Promise<ToolResult> {
 	const results = await Promise.allSettled(
 		args.paths.map(async (path) => {
-			const { buffer } = await readWithCache(path, ctx);
+			const { buffer } = await readWithVfs(path, ctx);
 			return `${path}:\n${buffer.toString("utf8")}`;
 		}),
 	);

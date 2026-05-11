@@ -2,13 +2,12 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { CacheStore } from "../cache/interface.js";
-import { resolveToolPath, toCacheKey } from "../path-utils.js";
-import type { ParsedRoot, StorageProvider } from "../providers/interface.js";
+import { resolveToolPath } from "../path-utils.js";
+import type { ParsedRoot } from "../providers/interface.js";
+import type { VirtualFS } from "../vfs.js";
 
 type Ctx = {
-	provider: StorageProvider;
-	cache: CacheStore;
+	vfs: VirtualFS;
 	roots: ParsedRoot[];
 };
 type ToolResult = {
@@ -30,18 +29,9 @@ export async function handleMoveFile(
 			args.destination,
 		);
 
-		if (srcRoot.bucket === dstRoot.bucket) {
-			await ctx.provider.copyObject(srcRoot, srcKey, dstKey);
-			await ctx.cache.delete(toCacheKey(dstRoot, dstKey));
-		} else {
-			const buffer = await ctx.provider.getObject(srcRoot, srcKey);
-			const dstCacheKey = toCacheKey(dstRoot, dstKey);
-			await ctx.cache.set(dstCacheKey, buffer);
-			ctx.cache.markDirty(dstCacheKey, dstRoot, dstKey);
-		}
-
-		await ctx.provider.deleteObject(srcRoot, srcKey);
-		await ctx.cache.delete(toCacheKey(srcRoot, srcKey));
+		// Copy then remove source
+		await ctx.vfs.copy(srcRoot, srcKey, dstRoot, dstKey);
+		await ctx.vfs.remove(srcRoot, srcKey);
 
 		return {
 			content: [

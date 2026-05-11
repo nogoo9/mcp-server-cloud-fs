@@ -1,11 +1,12 @@
 # @nogoo9/mcp-server-cloud-fs
 
 [![CI](https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml/badge.svg)](https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/nogoo9/mcp-server-cloud-fs/badge.svg?branch=main)](https://coveralls.io/github/nogoo9/mcp-server-cloud-fs?branch=main)
 [![npm](https://img.shields.io/npm/v/@nogoo9/mcp-server-cloud-fs)](https://www.npmjs.com/package/@nogoo9/mcp-server-cloud-fs)
 ![NPM Downloads](https://img.shields.io/npm/dm/%40nogoo%2Fmcp-server-cloud-fs)
 [![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue)](LICENSE)
 
-Drop-in cloud replacement for `mcp-server-filesystem` — 19 MCP tools (14 baseline + 5 extended), same schema, backed by S3, Azure Blob, or GCS.
+Drop-in cloud replacement for `mcp-server-filesystem` — 19 MCP tools (14 baseline + 5 extended), same schema, backed by S3, Azure Blob, or GCS. Also available as an npm library.
 
 ![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?logo=amazons3&logoColor=white)
 ![Azure Blob Storage](https://img.shields.io/badge/Azure_Blob_Storage-0078D4?logo=microsoftazure&logoColor=white)
@@ -17,7 +18,9 @@ Drop-in cloud replacement for `mcp-server-filesystem` — 19 MCP tools (14 basel
 
 `@nogoo9/mcp-server-cloud-fs` exposes all 14 tools defined by [`mcp-server-filesystem`](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) — same tool names, same parameter schemas — over cloud object storage. Drop it into any MCP client config that currently points at `mcp-server-filesystem` and your AI assistant gains read/write access to S3, Azure Blob Storage, or Google Cloud Storage buckets.
 
-In addition, v0.2.0 adds **5 extended tools** inspired by [claude-code's filesystem tool surface](https://github.com/codeaashu/claude-code/tree/main/src/tools): line-range reads, in-process regex search (single file and multi-file), server-side copy, and opt-in deletion.
+It also includes **5 extended tools** inspired by [claude-code's filesystem tool surface](https://github.com/codeaashu/claude-code/tree/main/src/tools): line-range reads, in-process regex search (single file and multi-file), server-side copy, and opt-in deletion.
+
+A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, and the package is available as a **programmatic npm library**.
 
 ## Quick start
 
@@ -42,6 +45,7 @@ Options:
   --no-cache                        Bypass cache entirely (pass-through mode)
   --enable-delete                   Enable the delete_file tool (disabled by default)
   --grep-max-objects <n>            Max objects grep_files scans per call (default: 1000)
+  --gcs-endpoint <url>              Custom endpoint for GCS (e.g. fake-gcs-server)
 ```
 
 Credentials are always sourced from SDK credential chains — never CLI flags.
@@ -117,6 +121,41 @@ cloud-fs-mcp gcs gs://my-bucket
 
 ---
 
+## Programmatic usage (npm library)
+
+The server is also available as a programmatic library for embedding in your own applications:
+
+```ts
+import {
+  createMcpServer,
+  VirtualFS,
+  MemoryStore,
+  S3Provider,
+  parseUri,
+} from "@nogoo9/mcp-server-cloud-fs";
+
+const roots  = [parseUri("s3://my-bucket")];
+const provider = new S3Provider({ region: "us-east-1" });
+const cache    = new MemoryStore(provider, { ttlMs: 60_000, syncDebounceMs: 2000 });
+const vfs      = new VirtualFS(provider, cache);
+await vfs.hydrate();                     // restore persisted metadata
+
+const server = createMcpServer({ vfs, roots });
+// Connect to your transport of choice
+```
+
+### Exported types & classes
+
+| Export | Description |
+|---|---|
+| `createMcpServer(ctx)` | Create a configured MCP server instance |
+| `VirtualFS` | FUSE-inspired write-back overlay (see Architecture below) |
+| `MemoryStore`, `FilesystemStore`, `createRedisStore`, `PassThroughCache` | Cache backends |
+| `S3Provider`, `AzureProvider`, `GcsProvider` | Storage provider implementations |
+| `parseUri`, `toCacheKey`, `resolveToolPath` | Path utilities |
+
+---
+
 ## Tool reference
 
 All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server validates every path against the configured root URIs at startup; requests outside allowed roots are rejected.
@@ -175,7 +214,67 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | `get_file_info` | `path` | Return metadata for a file: size in bytes, last-modified timestamp, and content type (where available). |
 | `list_allowed_directories` | _(none)_ | Return the list of configured root URIs. Useful for the model to know which paths it is allowed to access. |
 
-> ✨ = Extended tool, added in v0.2.0
+> ✨ = Extended tool
+
+---
+
+## Architecture: Virtual Filesystem (VFS)
+
+All tool operations are mediated through a **Virtual Filesystem (VFS)** layer inspired by [FUSE](https://en.wikipedia.org/wiki/Filesystem_in_Userspace). This eliminates stale-read bugs and provides immediate consistency.
+
+### Why a VFS?
+
+In earlier versions, directory listings and metadata queries bypassed the write cache. A file written via `write_file` might not appear in a `list_directory` call until the debounce timer flushed it to the provider. The VFS fixes this by acting as the **single source of truth** for all operations.
+
+### How it works
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  MCP Tool Handlers (read, write, list, stat, …)         │
+│  ⇣  All operations go through the VFS                   │
+├─────────────────────────────────────────────────────────┤
+│  VirtualFS                                              │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐              │
+│  │  Inodes   │ │ DirIndex  │ │ Tombstones│              │
+│  │ (metadata)│ │ (parents) │ │ (deleted) │              │
+│  └─────┬─────┘ └─────┬─────┘ └─────┬─────┘              │
+│        └──────────────┴─────────────┘                   │
+│         ⇣ Overlay (in-memory, persisted to CacheStore)  │
+├─────────────────────────────────────────────────────────┤
+│  CacheStore (Memory / Filesystem / Redis)               │
+│  ⇣ Content cache + dirty tracking + debounce flush      │
+├─────────────────────────────────────────────────────────┤
+│  StorageProvider (S3 / Azure Blob / GCS)                │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Three overlay structures:**
+
+| Structure | Purpose |
+|---|---|
+| **Inodes** (`Map<cacheKey, VfsStat>`) | Metadata (size, lastModified, contentType) for every object written through the VFS. Used by `stat()` and `list()` to avoid provider round-trips. |
+| **DirIndex** (`Map<dirKey, Set<objectKey>>`) | Parent-prefix → child-keys mapping. Ensures that `list_directory` and `search_files` see unflushed writes immediately. Only tracks session-local additions (additive). |
+| **Tombstones** (`Set<cacheKey>`) | Cache keys of objects removed through the VFS. Guarantees that `list`, `stat`, and `get` calls correctly exclude deleted objects even before the provider processes the delete. |
+
+### Resolution order
+
+| Operation | Resolution |
+|---|---|
+| **`get()`** (read) | Cache hit → return. Tombstoned → throw. Else → provider fallback (+ cache fill). |
+| **`stat()`** (metadata) | Inode overlay → cached content size → provider `headObject`. |
+| **`list()`** (directory) | Provider listing – tombstones + overlay dirIndex entries. |
+| **`put()`** (write) | Cache set + markDirty + inode update + dirIndex registration. Immediate visibility. |
+| **`remove()`** (delete) | Provider deleteObject + cache evict + tombstone + inode/dirIndex cleanup. Immediate invisibility. |
+| **`copy()`** | Same-bucket: server-side copy + inode derivation. Cross-bucket: get + put. |
+
+### Metadata persistence
+
+The inode table, dirIndex, and tombstone set are serialized to the `CacheStore` under well-known keys (`__vfs__/inodes`, `__vfs__/dirIndex`, `__vfs__/tombstones`). This means:
+
+- **Memory cache:** VFS state lives only for the process lifetime.
+- **Filesystem or Redis cache:** VFS state survives server restarts, providing warm-start consistency.
+
+On startup, `VirtualFS.hydrate()` loads any persisted metadata. Corrupted data is silently discarded (safe cold start).
 
 ---
 
@@ -198,22 +297,21 @@ All reads and writes are routed through a transparent cache layer to reduce roun
 | Cache backend | `memory` | `--cache-store <memory\|fs\|redis>` |
 | Entry TTL | 60 seconds | `--cache-ttl <seconds>` |
 | Write debounce | 2000 ms | `--sync-debounce <ms>` |
-| Directory listing TTL | `TTL ÷ 4` (15 s) | _(derived — not separately configurable)_ |
 | Pass-through (no cache) | off | `--no-cache` |
 
 ### How caching works
 
-**Reads:** On a cache miss the object is fetched from the provider and stored under the key `scheme://bucket/key`. Subsequent reads within the TTL window are served entirely from cache with no provider calls.
+**Reads:** On a cache miss the object is fetched from the provider and stored under the key `scheme://bucket/key`. Subsequent reads within the TTL window are served entirely from cache with no provider calls. The VFS inode overlay ensures that `stat()` and `list()` calls also reflect cached content.
 
-**Writes:** `write_file` and `edit_file` write content into cache immediately and mark the entry *dirty*. A background debounce timer (default: 2 s) fires after the last write and flushes all dirty entries to the provider via `putObject`. This means rapid successive edits to the same file only cause a single provider write.
+**Writes:** `write_file` and `edit_file` write content into cache immediately via `VFS.put()` and mark the entry *dirty*. A background debounce timer (default: 2 s) fires after the last write and flushes all dirty entries to the provider via `putObject`. This means rapid successive edits to the same file only cause a single provider write. The VFS inode and dirIndex are updated synchronously, so the file is immediately visible to `list`, `stat`, and `get`.
 
-**Deletes:** `delete_file` calls `deleteObject` on the provider and immediately evicts the cache entry so subsequent reads reflect the deletion.
+**Deletes:** `delete_file` calls `deleteObject` on the provider and immediately tombstones the key in the VFS. Subsequent reads, listings, and stat calls correctly exclude the deleted object.
 
-**Copy/move:** The destination entry is evicted from cache after `copy_file` / `move_file` so the next read re-fetches the freshly written content.
+**Copy/move:** Same-bucket copies use efficient server-side operations. The destination inode is derived from the source, and the dirIndex is updated immediately.
 
 **Graceful shutdown:** On `SIGTERM` or `SIGINT`, all dirty cache entries are flushed to the provider synchronously before the process exits, preventing data loss.
 
-**Pass-through mode:** `--no-cache` disables the cache entirely. Every read and write goes directly to the provider. Useful when you need strong read-after-write consistency or want to avoid stale data across multiple server instances.
+**Pass-through mode:** `--no-cache` disables the cache entirely. Every read and write goes directly to the provider. The VFS overlay still provides session-level consistency for metadata.
 
 ---
 

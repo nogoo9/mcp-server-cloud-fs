@@ -11,6 +11,7 @@ import { GcsProvider } from "./providers/gcs.js";
 import type { StorageProvider } from "./providers/interface.js";
 import { S3Provider } from "./providers/s3.js";
 import { createMcpServer } from "./server.js";
+import { VirtualFS } from "./vfs.js";
 
 function usage(): never {
 	console.error(`Usage: cloud-fs-mcp <s3|azure|gcs> <root-uri> [root-uri...] [options]
@@ -184,10 +185,14 @@ async function main(): Promise<void> {
 		cache = new MemoryStore(provider, cacheOpts);
 	}
 
+	// Create VFS overlay and hydrate persisted metadata
+	const vfs = new VirtualFS(provider, cache);
+	await vfs.hydrate();
+
 	const flushAndExit = async (signal: string): Promise<void> => {
 		console.error(`\nReceived ${signal}, flushing dirty cache entries...`);
 		try {
-			await cache.flush();
+			await vfs.flush();
 		} catch (err) {
 			console.error("Flush error:", err);
 		}
@@ -201,8 +206,7 @@ async function main(): Promise<void> {
 	});
 
 	const server = createMcpServer({
-		provider,
-		cache,
+		vfs,
 		roots,
 		enableDelete: args.enableDelete,
 		grepMaxObjects: args.grepMaxObjects,
