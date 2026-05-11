@@ -9,10 +9,10 @@ import {
 } from "./read.js";
 
 const roots = [parseUri("s3://test-bucket")];
-const ctx = (
-	p = makeProvider(),
-	c = makeCache(),
-) => ({ vfs: makeVfs(p, c), roots });
+const ctx = (p = makeProvider(), c = makeCache()) => ({
+	vfs: makeVfs(p, c),
+	roots,
+});
 
 type AsText = { text: string };
 type AsImage = { type: "image"; data: string; mimeType: string };

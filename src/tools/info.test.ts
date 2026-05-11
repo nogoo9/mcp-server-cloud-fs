@@ -9,14 +9,16 @@ const roots = [
 	parseUri("s3://other-bucket"),
 ];
 
-const ctx = (p = makeProvider({
-	headObject: mock(async (_r, key) => ({
-		key,
-		size: 1234,
-		lastModified: new Date("2025-06-15T12:00:00Z"),
-		contentType: "text/plain",
-	})),
-})) => ({ vfs: makeVfs(p, makeCache()), roots });
+const ctx = (
+	p = makeProvider({
+		headObject: mock(async (_r, key) => ({
+			key,
+			size: 1234,
+			lastModified: new Date("2025-06-15T12:00:00Z"),
+			contentType: "text/plain",
+		})),
+	}),
+) => ({ vfs: makeVfs(p, makeCache()), roots });
 
 describe("handleGetFileInfo", () => {
 	it("returns file metadata including size, lastModified, contentType", async () => {
@@ -49,10 +51,7 @@ describe("handleListAllowedDirectories", () => {
 
 	it("makes no provider calls", async () => {
 		const provider = makeProvider();
-		await handleListAllowedDirectories(
-			{},
-			{ vfs: makeVfs(provider), roots },
-		);
+		await handleListAllowedDirectories({}, { vfs: makeVfs(provider), roots });
 		expect(provider.headObject).not.toHaveBeenCalled();
 		expect(provider.listObjects).not.toHaveBeenCalled();
 	});

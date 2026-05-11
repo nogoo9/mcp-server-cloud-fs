@@ -29,7 +29,10 @@ export class S3Provider implements StorageProvider {
 		region?: string;
 		endpoint?: string;
 		/** Override defaults for every PutObject call (e.g. `{ ServerSideEncryption: 'AES256' }`). */
-		putOptions?: Omit<PutObjectCommandInput, "Bucket" | "Key" | "Body" | "ContentType">;
+		putOptions?: Omit<
+			PutObjectCommandInput,
+			"Bucket" | "Key" | "Body" | "ContentType"
+		>;
 	}) {
 		this.client = new S3Client({
 			region: opts.region ?? "us-east-1",

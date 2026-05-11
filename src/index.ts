@@ -101,7 +101,9 @@ function parseArgs(argv: string[]): CliArgs {
 		} else if (arg === "--grep-max-objects") {
 			const val = Number(args[++i]);
 			if (!Number.isInteger(val) || val < 1) {
-				console.error(`Invalid --grep-max-objects value: must be a positive integer`);
+				console.error(
+					`Invalid --grep-max-objects value: must be a positive integer`,
+				);
 				usage();
 			}
 			grepMaxObjects = val;

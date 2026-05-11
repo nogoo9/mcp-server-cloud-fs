@@ -267,7 +267,9 @@ export function registerExtendedTools(server: McpServer, ctx: Ctx): void {
 				"Returns matching lines prefixed with their 1-based line number (e.g. '42:matched line').",
 			inputSchema: z.object({
 				path: z.string(),
-				pattern: z.string().describe("Regular expression pattern to search for"),
+				pattern: z
+					.string()
+					.describe("Regular expression pattern to search for"),
 				case_insensitive: z
 					.boolean()
 					.optional()
@@ -288,7 +290,9 @@ export function registerExtendedTools(server: McpServer, ctx: Ctx): void {
 				`Scans at most max_objects objects per call (server default: ${ctx.grepMaxObjects ?? 1000}).`,
 			inputSchema: z.object({
 				path: z.string(),
-				pattern: z.string().describe("Regular expression pattern to search for"),
+				pattern: z
+					.string()
+					.describe("Regular expression pattern to search for"),
 				glob: z
 					.string()
 					.optional()

@@ -35,4 +35,3 @@ export function createMcpServer(ctx: ServerContext): McpServer {
 
 	return server;
 }
-

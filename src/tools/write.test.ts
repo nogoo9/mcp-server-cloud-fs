@@ -6,7 +6,11 @@ import { handleEditFile, handleWriteFile } from "./write.js";
 
 const roots = [parseUri("s3://test-bucket")];
 const ctx = (
-	p = makeProvider({ getObject: mock(async () => Buffer.from("original line1\noriginal line2\n")) }),
+	p = makeProvider({
+		getObject: mock(async () =>
+			Buffer.from("original line1\noriginal line2\n"),
+		),
+	}),
 	c = makeCache(),
 ) => ({ vfs: makeVfs(p, c), roots });
 
@@ -42,7 +46,11 @@ describe("handleWriteFile", () => {
 describe("handleEditFile", () => {
 	it("applies edit and writes result via VFS", async () => {
 		const cache = makeCache();
-		const provider = makeProvider({ getObject: mock(async () => Buffer.from("original line1\noriginal line2\n")) });
+		const provider = makeProvider({
+			getObject: mock(async () =>
+				Buffer.from("original line1\noriginal line2\n"),
+			),
+		});
 		await handleEditFile(
 			{
 				path: "s3://test-bucket/file.txt",
@@ -81,7 +89,11 @@ describe("handleEditFile", () => {
 
 	it("dryRun returns preview without writing", async () => {
 		const cache = makeCache();
-		const provider = makeProvider({ getObject: mock(async () => Buffer.from("original line1\noriginal line2\n")) });
+		const provider = makeProvider({
+			getObject: mock(async () =>
+				Buffer.from("original line1\noriginal line2\n"),
+			),
+		});
 		const result = await handleEditFile(
 			{
 				path: "s3://test-bucket/file.txt",

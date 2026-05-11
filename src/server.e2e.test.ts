@@ -52,9 +52,15 @@ async function probeTcp(host: string, port: number): Promise<boolean> {
 	return new Promise<boolean>((resolve) => {
 		const sock = net.createConnection({ port, host });
 		sock.setTimeout(2000);
-		sock.on("connect", () => { sock.destroy(); resolve(true); });
+		sock.on("connect", () => {
+			sock.destroy();
+			resolve(true);
+		});
 		sock.on("error", () => resolve(false));
-		sock.on("timeout", () => { sock.destroy(); resolve(false); });
+		sock.on("timeout", () => {
+			sock.destroy();
+			resolve(false);
+		});
 	});
 }
 
@@ -64,8 +70,11 @@ async function ensureBucket(s3: S3Client): Promise<void> {
 	try {
 		await s3.send(new CreateBucketCommand({ Bucket: BUCKET }));
 	} catch (e: unknown) {
-		const code = (e as { Code?: string; name?: string }).Code ?? (e as { name?: string }).name;
-		if (code !== "BucketAlreadyOwnedByYou" && code !== "BucketAlreadyExists") throw e;
+		const code =
+			(e as { Code?: string; name?: string }).Code ??
+			(e as { name?: string }).name;
+		if (code !== "BucketAlreadyOwnedByYou" && code !== "BucketAlreadyExists")
+			throw e;
 	}
 }
 
@@ -73,9 +82,13 @@ async function cleanBucket(s3: S3Client, prefix: string): Promise<void> {
 	const resp = await s3.send(
 		new ListObjectsV2Command({ Bucket: BUCKET, Prefix: prefix }),
 	);
-	const keys = (resp.Contents ?? []).flatMap((o) => (o.Key ? [{ Key: o.Key }] : []));
+	const keys = (resp.Contents ?? []).flatMap((o) =>
+		o.Key ? [{ Key: o.Key }] : [],
+	);
 	if (keys.length > 0)
-		await s3.send(new DeleteObjectsCommand({ Bucket: BUCKET, Delete: { Objects: keys } }));
+		await s3.send(
+			new DeleteObjectsCommand({ Bucket: BUCKET, Delete: { Objects: keys } }),
+		);
 }
 
 // ── MCP server factory ─────────────────────────────────────────────────────────
@@ -115,7 +128,11 @@ async function spawnMcpServer(extraArgs: string[] = []): Promise<McpHandle> {
 	return {
 		client,
 		close: async () => {
-			try { await transport.close(); } catch { /* ignore */ }
+			try {
+				await transport.close();
+			} catch {
+				/* ignore */
+			}
 		},
 	};
 }
@@ -125,7 +142,8 @@ async function spawnMcpServer(extraArgs: string[] = []): Promise<McpHandle> {
 type ToolResult = Awaited<ReturnType<Client["callTool"]>>;
 
 function firstText(r: ToolResult): string {
-	const items = (r as { content?: { type: string; text?: string }[] }).content ?? [];
+	const items =
+		(r as { content?: { type: string; text?: string }[] }).content ?? [];
 	return items[0]?.text ?? "";
 }
 
@@ -137,7 +155,11 @@ function firstText(r: ToolResult): string {
 //
 // We rely on Bun's sequential test execution within a describe block.
 
-function defineE2eSuite(label: string, extraArgs: string[], skip: () => boolean): void {
+function defineE2eSuite(
+	label: string,
+	extraArgs: string[],
+	skip: () => boolean,
+): void {
 	describe(label, () => {
 		let mcp: McpHandle;
 		let s3: S3Client;
@@ -161,7 +183,10 @@ function defineE2eSuite(label: string, extraArgs: string[], skip: () => boolean)
 			if (skip()) return;
 			const r = await mcp.client.callTool({
 				name: "write_file",
-				arguments: { path: `s3://${BUCKET}/${prefix}hello.txt`, content: "hello world" },
+				arguments: {
+					path: `s3://${BUCKET}/${prefix}hello.txt`,
+					content: "hello world",
+				},
 			});
 			expect(firstText(r)).toContain("Successfully wrote");
 			// write_file is cache-first: it stores in the in-process cache and schedules
@@ -208,7 +233,11 @@ function defineE2eSuite(label: string, extraArgs: string[], skip: () => boolean)
 		it("list reflects a bypass-write on the next call (no stale list cache)", async () => {
 			if (skip()) return;
 			await s3.send(
-				new PutObjectCommand({ Bucket: BUCKET, Key: `${prefix}bypass.txt`, Body: Buffer.from("direct") }),
+				new PutObjectCommand({
+					Bucket: BUCKET,
+					Key: `${prefix}bypass.txt`,
+					Body: Buffer.from("direct"),
+				}),
 			);
 			const r = await mcp.client.callTool({
 				name: "list_directory",
@@ -233,7 +262,11 @@ function defineE2eSuite(label: string, extraArgs: string[], skip: () => boolean)
 
 			// Overwrite directly in S3 — cache is NOT notified.
 			await s3.send(
-				new PutObjectCommand({ Bucket: BUCKET, Key: `${prefix}hello.txt`, Body: Buffer.from("overwritten") }),
+				new PutObjectCommand({
+					Bucket: BUCKET,
+					Key: `${prefix}hello.txt`,
+					Body: Buffer.from("overwritten"),
+				}),
 			);
 
 			// read_file should return the stale cached value.
@@ -251,7 +284,10 @@ function defineE2eSuite(label: string, extraArgs: string[], skip: () => boolean)
 			// Write through MCP — should evict the hello.txt cache entry.
 			await mcp.client.callTool({
 				name: "write_file",
-				arguments: { path: `s3://${BUCKET}/${prefix}hello.txt`, content: "fresh content" },
+				arguments: {
+					path: `s3://${BUCKET}/${prefix}hello.txt`,
+					content: "fresh content",
+				},
 			});
 			const r = await mcp.client.callTool({
 				name: "read_file",
@@ -265,7 +301,10 @@ function defineE2eSuite(label: string, extraArgs: string[], skip: () => boolean)
 			// By this point hello.txt content is "fresh content" (from cache eviction test)
 			await mcp.client.callTool({
 				name: "write_file",
-				arguments: { path: `s3://${BUCKET}/${prefix}hello.txt`, content: "hello world" },
+				arguments: {
+					path: `s3://${BUCKET}/${prefix}hello.txt`,
+					content: "hello world",
+				},
 			});
 			await mcp.client.callTool({
 				name: "edit_file",
@@ -305,7 +344,16 @@ function defineE2eSuite(label: string, extraArgs: string[], skip: () => boolean)
 			if (skip()) return;
 			const { tools } = await mcp.client.listTools();
 			const names = tools.map((t) => t.name);
-			for (const n of ["write_file", "read_file", "list_directory", "get_file_info", "search_files", "grep_files", "edit_file", "move_file"]) {
+			for (const n of [
+				"write_file",
+				"read_file",
+				"list_directory",
+				"get_file_info",
+				"search_files",
+				"grep_files",
+				"edit_file",
+				"move_file",
+			]) {
 				expect(names).toContain(n);
 			}
 		});
@@ -322,8 +370,14 @@ beforeAll(async () => {
 		probeHttp(`${MINIO_ENDPOINT}/minio/health/live`),
 		probeTcp("localhost", 6379),
 	]);
-	if (!minioUp) console.warn("⚠  MinIO not reachable — memory-cache e2e tests will be skipped");
-	if (!redisUp) console.warn("⚠  Redis not reachable — Redis-cache e2e tests will be skipped");
+	if (!minioUp)
+		console.warn(
+			"⚠  MinIO not reachable — memory-cache e2e tests will be skipped",
+		);
+	if (!redisUp)
+		console.warn(
+			"⚠  Redis not reachable — Redis-cache e2e tests will be skipped",
+		);
 });
 
 defineE2eSuite(

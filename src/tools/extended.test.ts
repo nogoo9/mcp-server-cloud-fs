@@ -15,7 +15,9 @@ const roots = [parseUri("s3://test-bucket")];
 const FIVE_LINES = "alpha\nbeta\ngamma\ndelta\nepsilon";
 
 const ctx = (
-	provider = makeProvider({ getObject: mock(async () => Buffer.from(FIVE_LINES)) }),
+	provider = makeProvider({
+		getObject: mock(async () => Buffer.from(FIVE_LINES)),
+	}),
 	cache = makeCache(),
 	opts: { enableDelete?: boolean; grepMaxObjects?: number } = {},
 ) => ({ vfs: makeVfs(provider, cache), roots, ...opts });
@@ -95,7 +97,11 @@ describe("handleGrepFile", () => {
 
 	it("performs case-insensitive search when requested", async () => {
 		const result = await handleGrepFile(
-			{ path: "s3://test-bucket/file.txt", pattern: "ALPHA", case_insensitive: true },
+			{
+				path: "s3://test-bucket/file.txt",
+				pattern: "ALPHA",
+				case_insensitive: true,
+			},
 			ctx(),
 		);
 		expect((result.content[0]! as T).text).toMatch(/1:alpha/);
@@ -148,7 +154,8 @@ describe("handleGrepFiles", () => {
 		const provider = makeProvider({
 			listObjects: mock(async () => twoObjects),
 			getObject: mock(async (_root, key) => {
-				if (key === "docs/readme.txt") return Buffer.from("line1\nhello world\nline3");
+				if (key === "docs/readme.txt")
+					return Buffer.from("line1\nhello world\nline3");
 				return Buffer.from("no match here");
 			}),
 		});
@@ -156,12 +163,16 @@ describe("handleGrepFiles", () => {
 			{ path: "s3://test-bucket", pattern: "hello", output_mode: "content" },
 			ctx(provider),
 		);
-		expect((result.content[0]! as T).text).toMatch(/docs\/readme\.txt:2:hello world/);
+		expect((result.content[0]! as T).text).toMatch(
+			/docs\/readme\.txt:2:hello world/,
+		);
 	});
 
 	it("respects max_objects cap and appends truncation notice", async () => {
 		const manyObjects = Array.from({ length: 5 }, (_, i) => ({
-			key: `file${i}.txt`, size: 5, lastModified: new Date(),
+			key: `file${i}.txt`,
+			size: 5,
+			lastModified: new Date(),
 		}));
 		const provider = makeProvider({
 			listObjects: mock(async () => ({ objects: manyObjects, prefixes: [] })),
@@ -191,7 +202,10 @@ describe("handleCopyFile", () => {
 	it("uses server-side copyObject for same-bucket copies", async () => {
 		const provider = makeProvider();
 		const result = await handleCopyFile(
-			{ source: "s3://test-bucket/a.txt", destination: "s3://test-bucket/b.txt" },
+			{
+				source: "s3://test-bucket/a.txt",
+				destination: "s3://test-bucket/b.txt",
+			},
 			ctx(provider),
 		);
 		expect(result.isError).toBeFalsy();
@@ -202,7 +216,10 @@ describe("handleCopyFile", () => {
 	it("evicts the destination from cache after same-bucket copy", async () => {
 		const cache = makeCache();
 		await handleCopyFile(
-			{ source: "s3://test-bucket/a.txt", destination: "s3://test-bucket/b.txt" },
+			{
+				source: "s3://test-bucket/a.txt",
+				destination: "s3://test-bucket/b.txt",
+			},
 			ctx(makeProvider(), cache),
 		);
 		expect(cache.delete).toHaveBeenCalled();
@@ -210,7 +227,10 @@ describe("handleCopyFile", () => {
 
 	it("returns error when source is outside allowed roots", async () => {
 		const result = await handleCopyFile(
-			{ source: "s3://evil-bucket/a.txt", destination: "s3://test-bucket/b.txt" },
+			{
+				source: "s3://evil-bucket/a.txt",
+				destination: "s3://test-bucket/b.txt",
+			},
 			ctx(),
 		);
 		expect(result.isError).toBe(true);
@@ -243,7 +263,9 @@ describe("registerExtendedTools", () => {
 	it("does NOT register delete_file when enableDelete is false", () => {
 		const registered: string[] = [];
 		const mockServer = {
-			registerTool: mock((name: string) => { registered.push(name); }),
+			registerTool: mock((name: string) => {
+				registered.push(name);
+			}),
 		} as unknown as Parameters<typeof registerExtendedTools>[0];
 		registerExtendedTools(mockServer, { ...ctx(), enableDelete: false });
 		expect(registered).not.toContain("delete_file");
@@ -252,7 +274,9 @@ describe("registerExtendedTools", () => {
 	it("DOES register delete_file when enableDelete is true", () => {
 		const registered: string[] = [];
 		const mockServer = {
-			registerTool: mock((name: string) => { registered.push(name); }),
+			registerTool: mock((name: string) => {
+				registered.push(name);
+			}),
 		} as unknown as Parameters<typeof registerExtendedTools>[0];
 		registerExtendedTools(mockServer, { ...ctx(), enableDelete: true });
 		expect(registered).toContain("delete_file");

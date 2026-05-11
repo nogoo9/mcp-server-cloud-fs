@@ -7,7 +7,9 @@ import { handleMoveFile } from "./move.js";
 const roots = [parseUri("s3://bucket-a"), parseUri("s3://bucket-b")];
 
 const ctx = (
-	p = makeProvider({ getObject: mock(async () => Buffer.from("file content")) }),
+	p = makeProvider({
+		getObject: mock(async () => Buffer.from("file content")),
+	}),
 	c = makeCache(),
 ) => ({ vfs: makeVfs(p, c), roots });
 

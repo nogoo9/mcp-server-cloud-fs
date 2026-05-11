@@ -104,9 +104,7 @@ describe("VirtualFS.list", () => {
 	it("merges provider listing with VFS overlay", async () => {
 		const provider = makeProvider({
 			listObjects: mock(async () => ({
-				objects: [
-					{ key: "existing.txt", size: 10, lastModified: new Date() },
-				],
+				objects: [{ key: "existing.txt", size: 10, lastModified: new Date() }],
 				prefixes: [],
 			})),
 		});
@@ -157,7 +155,11 @@ describe("VirtualFS.copy", () => {
 	});
 
 	it("uses get+put for cross-bucket copy", async () => {
-		const root2: ParsedRoot = { ...root, bucket: "other-bucket", uri: "s3://other-bucket" };
+		const root2: ParsedRoot = {
+			...root,
+			bucket: "other-bucket",
+			uri: "s3://other-bucket",
+		};
 		const provider = makeProvider();
 		const vfs = new VirtualFS(provider, makeCache());
 		await vfs.copy(root, "src.txt", root2, "dst.txt");
