@@ -10,6 +10,7 @@ export { createRedisStore } from "./cache/redis.js";
 // Utilities
 export { parseUri, resolveToolPath, toCacheKey } from "./path-utils.js";
 export { AzureProvider } from "./providers/azure.js";
+export { inferContentType } from "./providers/content-type.js";
 export { GcsProvider } from "./providers/gcs.js";
 // Storage providers
 export type {

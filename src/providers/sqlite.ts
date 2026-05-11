@@ -2,6 +2,7 @@
 // SQLite-backed storage provider using Bun's built-in bun:sqlite. Zero external deps.
 
 import { Database } from "bun:sqlite";
+import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
 	ObjectInfo,
@@ -74,7 +75,13 @@ export class SqliteProvider implements StorageProvider {
 				`INSERT OR REPLACE INTO objects (bucket, key, content, content_type, size, last_modified)
 				VALUES (?, ?, ?, ?, ?, datetime('now'))`,
 			)
-			.run(root.bucket, key, content, inferContentType(key), content.length);
+			.run(
+				root.bucket,
+				key,
+				content,
+				inferContentType(key, content),
+				content.length,
+			);
 	}
 
 	async deleteObject(root: ParsedRoot, key: string): Promise<void> {
@@ -178,24 +185,4 @@ export class SqliteProvider implements StorageProvider {
 	close(): void {
 		this.db.close();
 	}
-}
-
-function inferContentType(key: string): string {
-	const ext = key.split(".").pop()?.toLowerCase() ?? "";
-	const map: Record<string, string> = {
-		txt: "text/plain",
-		md: "text/markdown",
-		html: "text/html",
-		json: "application/json",
-		csv: "text/csv",
-		js: "application/javascript",
-		ts: "application/typescript",
-		xml: "application/xml",
-		yaml: "text/yaml",
-		yml: "text/yaml",
-		png: "image/png",
-		jpg: "image/jpeg",
-		pdf: "application/pdf",
-	};
-	return map[ext] ?? "application/octet-stream";
 }

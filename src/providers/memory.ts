@@ -1,6 +1,7 @@
 // src/providers/memory.ts
 // Fully in-process storage provider for demos and tests. Zero dependencies.
 
+import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
 	ObjectInfo,
@@ -58,7 +59,7 @@ export class MemoryProvider implements StorageProvider {
 	): Promise<void> {
 		this.store.set(this.storeKey(root, key), {
 			content,
-			contentType: inferContentType(key),
+			contentType: inferContentType(key, content),
 			lastModified: new Date(),
 		});
 	}
@@ -139,24 +140,4 @@ export class MemoryProvider implements StorageProvider {
 		const key = prefix.endsWith("/") ? prefix : `${prefix}/`;
 		await this.putObject(root, key, Buffer.alloc(0));
 	}
-}
-
-function inferContentType(key: string): string {
-	const ext = key.split(".").pop()?.toLowerCase() ?? "";
-	const map: Record<string, string> = {
-		txt: "text/plain",
-		md: "text/markdown",
-		html: "text/html",
-		json: "application/json",
-		csv: "text/csv",
-		js: "application/javascript",
-		ts: "application/typescript",
-		xml: "application/xml",
-		yaml: "text/yaml",
-		yml: "text/yaml",
-		png: "image/png",
-		jpg: "image/jpeg",
-		pdf: "application/pdf",
-	};
-	return map[ext] ?? "application/octet-stream";
 }
