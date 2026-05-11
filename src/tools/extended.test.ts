@@ -295,6 +295,34 @@ describe("handleGrepFiles", () => {
 		expect(text).toContain("No files matched");
 		expect(result.isError).toBeFalsy();
 	});
+
+	it("caches the listObjects result and reuses it on the second call", async () => {
+		let listCallCount = 0;
+		const provider = makeProvider({
+			listObjects: mock(async () => {
+				listCallCount++;
+				return twoObjects;
+			}),
+			getObject: mock(async () => Buffer.from("hello")),
+		});
+		// Use a real-ish cache that stores and returns values
+		const store = new Map<string, Buffer>();
+		const cache = makeCache();
+		cache.get = mock(async (key: string) => store.get(key) ?? null);
+		cache.set = mock(async (key: string, val: Buffer) => {
+			store.set(key, val);
+		});
+
+		const c = ctx(provider, cache);
+
+		// First call — should call listObjects
+		await handleGrepFiles({ path: "s3://test-bucket", pattern: "hello" }, c);
+		expect(listCallCount).toBe(1);
+
+		// Second call — listing should come from cache
+		await handleGrepFiles({ path: "s3://test-bucket", pattern: "hello" }, c);
+		expect(listCallCount).toBe(1); // still 1 — no second provider call
+	});
 });
 
 // ---------------------------------------------------------------------------

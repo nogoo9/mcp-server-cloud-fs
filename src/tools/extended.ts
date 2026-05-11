@@ -6,7 +6,7 @@ import { minimatch } from "minimatch";
 import { z } from "zod";
 import type { CacheStore } from "../cache/interface.js";
 import { resolveToolPath, toCacheKey } from "../path-utils.js";
-import type { ParsedRoot, StorageProvider } from "../providers/interface.js";
+import type { ListResult, ParsedRoot, StorageProvider } from "../providers/interface.js";
 
 type Ctx = {
 	provider: StorageProvider;
@@ -37,6 +37,26 @@ async function getObjectWithCache(
 		await ctx.cache.set(cacheKey, buffer);
 	}
 	return { buffer, root, key };
+}
+
+/**
+ * Cache listObjects results using the same CacheStore.
+ * Key format: `list://<scheme>://<bucket>/<prefix>` — the `list:` prefix
+ * avoids collisions with object-content cache keys.
+ */
+async function listObjectsWithCache(
+	root: ParsedRoot,
+	prefix: string,
+	ctx: Ctx,
+): Promise<ListResult> {
+	const listCacheKey = `list://${root.scheme}://${root.bucket}/${prefix}`;
+	const cached = await ctx.cache.get(listCacheKey);
+	if (cached !== null) {
+		return JSON.parse(cached.toString("utf8")) as ListResult;
+	}
+	const result = await ctx.provider.listObjects(root, prefix);
+	await ctx.cache.set(listCacheKey, Buffer.from(JSON.stringify(result)));
+	return result;
 }
 
 function ok(text: string): TextToolResult {
@@ -120,7 +140,7 @@ export async function handleGrepFiles(
 	try {
 		const { root, key } = resolveToolPath(ctx.roots, args.path);
 		const prefix = key ? `${key}/` : "";
-		const { objects } = await ctx.provider.listObjects(root, prefix);
+		const { objects } = await listObjectsWithCache(root, prefix, ctx);
 
 		const maxObjects = args.max_objects ?? ctx.grepMaxObjects ?? 1000;
 		const flags = args.case_insensitive ? "i" : "";
