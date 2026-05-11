@@ -31,7 +31,7 @@
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "infra:setup": "docker compose -f infra/docker-compose.yml up -d",
     "infra:logs": "docker compose -f infra/docker-compose.yml logs",
-    "build:app": "INPUT=src/app/shell-app.html vite build -c src/app/vite.config.ts",
+    "build:app": "vite build -c src/app/vite.config.ts",
     "inspect": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts",
     "inspect:memory": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts memory mem://demo --enable-shell --seed-demo"
   },

@@ -1,13 +1,18 @@
 // src/app/vite.config.ts
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
 
+const root = resolve(import.meta.dirname);
+
 export default defineConfig({
+	root,
 	plugins: [viteSingleFile()],
 	build: {
-		outDir: "../../dist/app",
+		outDir: resolve(root, "../../dist/app"),
+		emptyOutDir: true,
 		rollupOptions: {
-			input: process.env.INPUT || "src/app/shell-app.html",
+			input: resolve(root, "shell-app.html"),
 		},
 	},
 });

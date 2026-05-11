@@ -55,10 +55,32 @@ async function tryRegisterShellApp(server: McpServer): Promise<void> {
 			try {
 				const fs = await import("node:fs/promises");
 				const path = await import("node:path");
-				html = await fs.readFile(
-					path.join(import.meta.dirname, "app", "shell-app.html"),
-					"utf-8",
-				);
+				// Prefer the bundled build (single-file HTML with inlined JS/CSS).
+				// When running from source (bun src/server.ts), import.meta.dirname
+				// is "src/", so we resolve upward to find dist/app/.
+				// When running from dist (node dist/server.js), it's "dist/".
+				const candidates = [
+					path.resolve(
+						import.meta.dirname,
+						"..",
+						"dist",
+						"app",
+						"shell-app.html",
+					),
+					path.resolve(import.meta.dirname, "app", "shell-app.html"),
+				];
+				html = "";
+				for (const candidate of candidates) {
+					try {
+						html = await fs.readFile(candidate, "utf-8");
+						break;
+					} catch {
+						// try next candidate
+					}
+				}
+				if (!html) {
+					throw new Error("Shell app HTML not found");
+				}
 			} catch {
 				return {
 					contents: [
