@@ -9,6 +9,10 @@
 [![Built with Claude](https://img.shields.io/badge/Built_with-Claude-d97706?logo=anthropic&logoColor=white)](https://claude.ai)
 [![Built with Antigravity](https://img.shields.io/badge/Built_with-Antigravity-4285F4?logo=google&logoColor=white)](https://deepmind.google)
 
+
+> **📖 [Read the full documentation →](https://nogoo9.github.io/mcp-server-cloud-fs/latest/)**
+
+
 Cloud replacement for `mcp-server-filesystem` — 20+ tools for S3, Azure Blob, and GCS. Deploy locally via STDIO or remotely over HTTP/WebSocket with OAuth 2.1 authentication. Also available as an npm library.
 
 ![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?logo=amazons3&logoColor=white)
