@@ -34,5 +34,24 @@ export type {
 	TransportType,
 } from "./transports/index.js";
 export { WebSocketServerTransport } from "./transports/ws.js";
+// Auth (v0.4.0)
+export {
+	SCOPES,
+	ALL_SCOPES,
+	getRequiredScope,
+	hasScope,
+	parseScopes,
+} from "./auth/scopes.js";
+export type { Scope } from "./auth/scopes.js";
+export {
+	ExternalTokenVerifier,
+	EnterpriseAuthVerifier,
+	extractBearerToken,
+} from "./auth/verifier.js";
+export type { TokenClaims, VerifierOptions, EnterpriseAuthOptions } from "./auth/verifier.js";
+// Middleware (v0.4.0)
+export { createRateLimiter, InMemoryRateLimiter } from "./middleware/rate-limit.js";
+export type { RateLimiter, RateLimitResult } from "./middleware/rate-limit.js";
+// VFS
 export type { VfsStat } from "./vfs.js";
 export { VirtualFS } from "./vfs.js";
