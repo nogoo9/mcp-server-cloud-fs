@@ -42,7 +42,6 @@ export class WebSocketServerTransport implements Transport {
 		close(code?: number, reason?: string): void;
 		readyState: number;
 	} | null = null;
-	private _started = false;
 
 	constructor(sessionId: string) {
 		this.sessionId = sessionId;
@@ -63,9 +62,7 @@ export class WebSocketServerTransport implements Transport {
 			const message = JSON.parse(data) as JSONRPCMessage;
 			this.onmessage?.(message);
 		} catch (err) {
-			this.onerror?.(
-				err instanceof Error ? err : new Error(String(err)),
-			);
+			this.onerror?.(err instanceof Error ? err : new Error(String(err)));
 		}
 	}
 
@@ -76,7 +73,7 @@ export class WebSocketServerTransport implements Transport {
 	}
 
 	async start(): Promise<void> {
-		this._started = true;
+		// No-op: WebSocket transport is ready once the socket is attached.
 	}
 
 	async send(
@@ -114,7 +111,7 @@ export function createWsTransport(options: TransportOptions): ManagedTransport {
 	}
 
 	let bunServer: BunServer | null = null;
-	let mcpServer: McpServer | null = null;
+	let _mcpServer: McpServer | null = null;
 	const sessions = new Map<string, WebSocketServerTransport>();
 
 	interface WsData {
@@ -125,7 +122,7 @@ export function createWsTransport(options: TransportOptions): ManagedTransport {
 		transport: null,
 
 		async start(server: McpServer) {
-			mcpServer = server;
+			_mcpServer = server;
 
 			// biome-ignore lint/suspicious/noExplicitAny: Bun.serve generic typing requires any for the websocket data interface
 			bunServer = (Bun as any).serve({
@@ -133,7 +130,10 @@ export function createWsTransport(options: TransportOptions): ManagedTransport {
 				hostname: options.host,
 
 				// biome-ignore lint/suspicious/noExplicitAny: Bun.serve fetch handler types
-				async fetch(req: Request, bunServerRef: any): Promise<Response | undefined> {
+				async fetch(
+					req: Request,
+					bunServerRef: any,
+				): Promise<Response | undefined> {
 					const url = new URL(req.url);
 
 					// Health checks

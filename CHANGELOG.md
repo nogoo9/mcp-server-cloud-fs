@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Documentation site** — VitePress-powered docs deployed to GitHub Pages with versioned releases, PR previews, full-text search, and dark mode ([nogoo9.github.io/mcp-server-cloud-fs](https://nogoo9.github.io/mcp-server-cloud-fs/))
 - **Streamable HTTP transport** — deploy `cloud-fs-mcp` as a remote HTTP service with full [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http) support:
   - **Dual runtime**: Bun-native via `WebStandardStreamableHTTPServerTransport` + `Bun.serve()` (zero Express dependency), Node.js via `StreamableHTTPServerTransport` + Express
   - Runtime auto-detection at startup — falls back gracefully based on available APIs

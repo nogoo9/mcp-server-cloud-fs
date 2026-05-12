@@ -3,6 +3,8 @@
   "mcpName": "io.github.nogoo9/mcp-server-cloud-fs",
   "version": "0.4.0",
   "description": "Cloud replacement for mcp-server-filesystem — 20 tools for S3, Azure Blob, and GCS",
+  "author": "eterna2",
+  "contributors": ["eterna2"],
   "type": "module",
   "bin": {
     "cloud-fs-mcp": "dist/index.js"
@@ -22,10 +24,13 @@
     "lint": "biome check src/",
     "format": "biome check --write --unsafe src/",
     "check": "biome check --write --unsafe src/",
-    "test": "bun test src/cache src/providers src/tools src/path-utils.test.ts src/vfs.test.ts",
+    "test": "bun test src/cache src/providers src/tools src/auth src/middleware src/path-utils.test.ts src/vfs.test.ts",
     "test:coverage": "bun test --coverage --coverage-reporter=lcov --coverage-dir=coverage",
     "test:integration": "bun test src/providers/*.integration.test.ts",
-    "test:e2e": "bun test src/server.e2e.test.ts --timeout 30000",
+    "test:e2e": "bun test src/server.e2e.test.ts src/transports/http.e2e.test.ts src/transports/ws.e2e.test.ts --timeout 30000",
+    "test:e2e:http": "bun test src/transports/http.e2e.test.ts src/transports/ws.e2e.test.ts --timeout 30000",
+    "test:e2e:ws": "bun test src/transports/ws.e2e.test.ts --timeout 30000",
+    "test:e2e:infra": "bun test src/server.e2e.test.ts --timeout 30000",
     "test:all": "bun test --timeout 30000",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
@@ -33,7 +38,10 @@
     "infra:logs": "docker compose -f infra/docker-compose.yml logs",
     "build:app": "vite build -c src/app/vite.config.ts",
     "inspect": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts",
-    "inspect:memory": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts memory mem://demo --enable-shell --seed-demo"
+    "inspect:memory": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts memory mem://demo --enable-shell --seed-demo",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "files": [
     "dist/",
@@ -83,6 +91,7 @@
     "ioredis": "^5.0.0",
     "typescript": "^5.0.0",
     "vite": "^8.0.12",
-    "vite-plugin-singlefile": "^2.3.3"
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitepress": "^1.6.4"
   }
 }

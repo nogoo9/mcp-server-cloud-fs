@@ -2,10 +2,10 @@
 import { describe, expect, test } from "bun:test";
 import {
 	ALL_SCOPES,
-	SCOPES,
 	getRequiredScope,
 	hasScope,
 	parseScopes,
+	SCOPES,
 } from "./scopes.js";
 
 describe("SCOPES", () => {

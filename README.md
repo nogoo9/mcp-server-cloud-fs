@@ -1,10 +1,13 @@
 # @nogoo9/mcp-server-cloud-fs
 
 [![CI](https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml/badge.svg)](https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-GitHub_Pages-blue?logo=github)](https://nogoo9.github.io/mcp-server-cloud-fs/)
 [![Coverage Status](https://coveralls.io/repos/github/nogoo9/mcp-server-cloud-fs/badge.svg?branch=main)](https://coveralls.io/github/nogoo9/mcp-server-cloud-fs?branch=main)
 [![npm](https://img.shields.io/npm/v/@nogoo9/mcp-server-cloud-fs)](https://www.npmjs.com/package/@nogoo9/mcp-server-cloud-fs)
-![NPM Downloads](https://img.shields.io/npm/dm/%40nogoo%2Fmcp-server-cloud-fs)
+![NPM Downloads](https://img.shields.io/npm/dm/%40nogoo9%2Fmcp-server-cloud-fs)
 [![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue)](LICENSE)
+[![Built with Claude](https://img.shields.io/badge/Built_with-Claude-d97706?logo=anthropic&logoColor=white)](https://claude.ai)
+[![Built with Antigravity](https://img.shields.io/badge/Built_with-Antigravity-4285F4?logo=google&logoColor=white)](https://deepmind.google)
 
 Cloud replacement for `mcp-server-filesystem` — 20+ tools for S3, Azure Blob, and GCS. Deploy locally via STDIO or remotely over HTTP/WebSocket with OAuth 2.1 authentication. Also available as an npm library.
 
@@ -33,6 +36,8 @@ Cloud replacement for `mcp-server-filesystem` — 20+ tools for S3, Azure Blob, 
 - [Caching](#caching)
 - [Programmatic Usage](#programmatic-usage-npm-library)
 - [MCP Inspector](#mcp-inspector)
+- [Development & Testing](#development--testing)
+- [Documentation](#documentation)
 - [License](#license)
 
 ---
@@ -644,6 +649,50 @@ bun run inspect -- s3 s3://my-bucket --region us-east-1 --enable-shell
 Build the app: `bun run build:app` → outputs `dist/app/shell-app.html`.
 
 Catppuccin Mocha theme, command history, auto-resize. Renders inside compatible MCP hosts (Claude Desktop) via the MCP Apps extension.
+
+---
+
+## Development & Testing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full setup instructions.
+
+### Test tiers
+
+| Tier | Command | Infra? |
+|---|---|---|
+| **Unit** | `bun run test` | No |
+| **E2E (HTTP)** | `bun run test:e2e:http` | No |
+| **E2E (Infra)** | `bun run test:e2e:infra` | Docker |
+| **Integration** | `bun run test:integration` | Docker |
+| **All** | `bun run test:all` | Docker |
+
+### CI pipeline
+
+The CI workflow runs on every push/PR:
+
+1. **ci** job: lint → typecheck → unit tests (with coverage) → HTTP E2E → build
+2. **e2e** job: full E2E with Docker Compose (MinIO, Redis)
+
+HTTP E2E tests use the in-memory provider and need zero infrastructure, making them fast and reliable for every CI run.
+
+---
+
+## Documentation
+
+Full documentation is available at **[nogoo9.github.io/mcp-server-cloud-fs](https://nogoo9.github.io/mcp-server-cloud-fs/)**.
+
+- 📖 Versioned docs for each release (v0.4.0+)
+- 🔄 PR preview docs for open pull requests
+- 🔍 Full-text search, dark mode, responsive design
+- Built with [VitePress](https://vitepress.dev/)
+
+To run the documentation site locally:
+
+```bash
+bun run docs:dev      # start dev server at http://localhost:5173
+bun run docs:build    # build static site
+bun run docs:preview  # preview production build
+```
 
 ---
 

@@ -29,7 +29,9 @@ async function waitForReady(url: string, timeoutMs = 10_000): Promise<void> {
 		}
 		await Bun.sleep(100);
 	}
-	throw new Error(`Server at ${url} did not become ready within ${timeoutMs}ms`);
+	throw new Error(
+		`Server at ${url} did not become ready within ${timeoutMs}ms`,
+	);
 }
 
 describe("MCP e2e — HTTP transport (memory provider)", () => {
@@ -65,7 +67,7 @@ describe("MCP e2e — HTTP transport (memory provider)", () => {
 			new URL(`${BASE_URL}/mcp`),
 		);
 		client = new Client({ name: "http-e2e-test", version: "1.0.0" });
-		await client.connect(transport);
+		await client.connect(transport as Parameters<typeof client.connect>[0]);
 	});
 
 	afterAll(async () => {
@@ -116,7 +118,8 @@ describe("MCP e2e — HTTP transport (memory provider)", () => {
 			name: "read_file",
 			arguments: { path: "mem://e2e-http/README.md" },
 		});
-		const text = (r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
+		const text =
+			(r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
 		expect(text).toContain("Cloud FS Demo");
 	});
 
@@ -133,7 +136,8 @@ describe("MCP e2e — HTTP transport (memory provider)", () => {
 			name: "read_file",
 			arguments: { path: "mem://e2e-http/test-http.txt" },
 		});
-		const text = (r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
+		const text =
+			(r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
 		expect(text).toBe("hello from http transport");
 	});
 
@@ -142,23 +146,28 @@ describe("MCP e2e — HTTP transport (memory provider)", () => {
 			name: "list_directory",
 			arguments: { path: "mem://e2e-http/" },
 		});
-		const text = (r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
+		const text =
+			(r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
 		expect(text).toContain("README.md");
 	});
 
 	it("shell tool works over HTTP", async () => {
 		const r = await client!.callTool({
 			name: "shell",
-			arguments: { command: 'echo "http works" > mem://e2e-http/http-test.txt' },
+			arguments: {
+				command: 'echo "http works" > mem://e2e-http/http-test.txt',
+			},
 		});
-		const text = (r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
+		const text =
+			(r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
 		expect(text).toBe("");
 
 		const r2 = await client!.callTool({
 			name: "read_file",
 			arguments: { path: "mem://e2e-http/http-test.txt" },
 		});
-		const text2 = (r2.content as { type: string; text?: string }[])?.[0]?.text ?? "";
+		const text2 =
+			(r2.content as { type: string; text?: string }[])?.[0]?.text ?? "";
 		expect(text2).toContain("http works");
 	});
 
@@ -181,7 +190,8 @@ describe("MCP e2e — HTTP transport (memory provider)", () => {
 			name: "read_file",
 			arguments: { path: "mem://e2e-http/edit-test.txt" },
 		});
-		const text = (r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
+		const text =
+			(r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
 		expect(text).toBe("modified content");
 	});
 });

@@ -1,16 +1,21 @@
 // src/auth/index.ts
 // Auth module — re-exports and factory.
 
-export { SCOPES, ALL_SCOPES, getRequiredScope, hasScope, parseScopes } from "./scopes.js";
 export type { Scope } from "./scopes.js";
-
 export {
-	ExternalTokenVerifier,
-	EnterpriseAuthVerifier,
-	extractBearerToken,
-} from "./verifier.js";
+	ALL_SCOPES,
+	getRequiredScope,
+	hasScope,
+	parseScopes,
+	SCOPES,
+} from "./scopes.js";
 export type {
+	EnterpriseAuthOptions,
 	TokenClaims,
 	VerifierOptions,
-	EnterpriseAuthOptions,
+} from "./verifier.js";
+export {
+	EnterpriseAuthVerifier,
+	ExternalTokenVerifier,
+	extractBearerToken,
 } from "./verifier.js";
