@@ -136,7 +136,7 @@ async function tryRegisterShellApp(server: McpServer): Promise<void> {
 export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	const server = new McpServer({
 		name: "mcp-server-cloud-fs",
-		version: "0.3.0",
+		version: "0.4.0",
 	});
 
 	registerReadTools(server, ctx);

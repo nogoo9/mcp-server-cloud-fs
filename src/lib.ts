@@ -26,5 +26,13 @@ export type { ServerContext } from "./server.js";
 export { createMcpServer } from "./server.js";
 export { executeShell } from "./tools/shell/index.js";
 export type { ShellCommandHandler, ShellContext } from "./tools/shell/types.js";
+// Transports (v0.4.0)
+export { createTransport, isBun } from "./transports/index.js";
+export type {
+	ManagedTransport,
+	TransportOptions,
+	TransportType,
+} from "./transports/index.js";
+export { WebSocketServerTransport } from "./transports/ws.js";
 export type { VfsStat } from "./vfs.js";
 export { VirtualFS } from "./vfs.js";

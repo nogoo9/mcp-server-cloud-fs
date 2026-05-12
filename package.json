@@ -1,7 +1,7 @@
 {
   "name": "@nogoo9/mcp-server-cloud-fs",
   "mcpName": "io.github.nogoo9/mcp-server-cloud-fs",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Cloud replacement for mcp-server-filesystem — 20 tools for S3, Azure Blob, and GCS",
   "type": "module",
   "bin": {
@@ -60,7 +60,9 @@
     "@modelcontextprotocol/ext-apps": "^1.7.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "file-type": "^22.0.1",
+    "jose": "^6.2.3",
     "minimatch": "^9.0.0",
+    "uuidv7": "^1.2.1",
     "zod": "^3.0.0"
   },
   "peerDependencies": {
@@ -74,8 +76,10 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
     "@types/bun": "latest",
+    "@types/express": "^5.0.6",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
+    "express": "^5.2.1",
     "ioredis": "^5.0.0",
     "typescript": "^5.0.0",
     "vite": "^8.0.12",
