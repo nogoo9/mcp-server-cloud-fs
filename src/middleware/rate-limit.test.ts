@@ -1,9 +1,6 @@
 // src/middleware/rate-limit.test.ts
 import { describe, expect, test } from "bun:test";
-import {
-	InMemoryRateLimiter,
-	createRateLimiter,
-} from "./rate-limit.js";
+import { createRateLimiter, InMemoryRateLimiter } from "./rate-limit.js";
 
 describe("InMemoryRateLimiter", () => {
 	test("allows requests within rate limit", async () => {

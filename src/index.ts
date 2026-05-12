@@ -189,11 +189,13 @@ function parseArgs(argv: string[]): CliArgs {
 			sqliteDb = args[++i];
 		} else if (arg === "--seed-demo") {
 			seedDemo = true;
-		// v0.4.0 — transport & production flags
+			// v0.4.0 — transport & production flags
 		} else if (arg === "--transport") {
 			const val = args[++i];
 			if (val !== "stdio" && val !== "http" && val !== "ws") {
-				console.error(`Invalid --transport value: ${String(val)}. Must be stdio, http, or ws.`);
+				console.error(
+					`Invalid --transport value: ${String(val)}. Must be stdio, http, or ws.`,
+				);
 				usage();
 			}
 			transport = val;
@@ -204,7 +206,9 @@ function parseArgs(argv: string[]): CliArgs {
 		} else if (arg === "--auth") {
 			const val = args[++i];
 			if (val !== "none" && val !== "builtin" && val !== "external") {
-				console.error(`Invalid --auth value: ${String(val)}. Must be none, builtin, or external.`);
+				console.error(
+					`Invalid --auth value: ${String(val)}. Must be none, builtin, or external.`,
+				);
 				usage();
 			}
 			auth = val;

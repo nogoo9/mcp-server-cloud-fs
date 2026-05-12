@@ -27,8 +27,7 @@ function corsHeaders(
 		"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
 		"Access-Control-Allow-Headers":
 			"Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Last-Event-ID, Authorization",
-		"Access-Control-Expose-Headers":
-			"Mcp-Session-Id, Mcp-Protocol-Version",
+		"Access-Control-Expose-Headers": "Mcp-Session-Id, Mcp-Protocol-Version",
 		"Access-Control-Max-Age": "86400",
 	};
 
@@ -37,27 +36,21 @@ function corsHeaders(
 	// Localhost dev mode: allow all origins
 	if (isLocalhost && allowedOrigins.length === 0) {
 		headers["Access-Control-Allow-Origin"] = requestOrigin;
-		headers["Vary"] = "Origin";
+		headers.Vary = "Origin";
 		return headers;
 	}
 
 	// Production: strict allowlist
-	if (
-		allowedOrigins.length === 0 ||
-		allowedOrigins.includes(requestOrigin)
-	) {
+	if (allowedOrigins.length === 0 || allowedOrigins.includes(requestOrigin)) {
 		headers["Access-Control-Allow-Origin"] = requestOrigin;
-		headers["Vary"] = "Origin";
+		headers.Vary = "Origin";
 	}
 
 	return headers;
 }
 
 /** Health check response. */
-function healthResponse(
-	path: string,
-	ready: boolean,
-): Response | null {
+function healthResponse(path: string, ready: boolean): Response | null {
 	if (path === "/healthz") {
 		return new Response(JSON.stringify({ status: "ok" }), {
 			status: 200,
@@ -106,19 +99,21 @@ interface BunServer {
 function createBunHttpTransport(options: TransportOptions): ManagedTransport {
 	let bunServer: BunServer | null = null;
 	let isReady = false;
-	let mcpServer: McpServer | null = null;
+	let _mcpServer: McpServer | null = null;
 
 	// Per-session transport map
 	const sessions = new Map<string, WebStandardStreamableHTTPServerTransport>();
 
 	const isLocalhost =
-		options.host === "127.0.0.1" || options.host === "localhost" || options.host === "::1";
+		options.host === "127.0.0.1" ||
+		options.host === "localhost" ||
+		options.host === "::1";
 
 	return {
 		transport: null, // HTTP is multi-session, no single transport
 
 		async start(server: McpServer) {
-			mcpServer = server;
+			_mcpServer = server;
 
 			bunServer = Bun.serve({
 				port: options.port,
@@ -132,20 +127,28 @@ function createBunHttpTransport(options: TransportOptions): ManagedTransport {
 					// CORS preflight
 					if (req.method === "OPTIONS") {
 						const cors = corsHeaders(origin, options.corsOrigins, isLocalhost);
-						if (options.requestLogging) logRequest("OPTIONS", url.pathname, 204, startTime);
+						if (options.requestLogging)
+							logRequest("OPTIONS", url.pathname, 204, startTime);
 						return new Response(null, { status: 204, headers: cors });
 					}
 
 					// Health checks
 					const healthResp = healthResponse(url.pathname, isReady);
 					if (healthResp) {
-						if (options.requestLogging) logRequest(req.method, url.pathname, healthResp.status, startTime);
+						if (options.requestLogging)
+							logRequest(
+								req.method,
+								url.pathname,
+								healthResp.status,
+								startTime,
+							);
 						return healthResp;
 					}
 
 					// Only handle /mcp path
 					if (url.pathname !== "/mcp") {
-						if (options.requestLogging) logRequest(req.method, url.pathname, 404, startTime);
+						if (options.requestLogging)
+							logRequest(req.method, url.pathname, 404, startTime);
 						return new Response("Not Found", { status: 404 });
 					}
 
@@ -174,10 +177,12 @@ function createBunHttpTransport(options: TransportOptions): ManagedTransport {
 						};
 						await server.connect(transport);
 					} else if (sessionId && !sessions.has(sessionId)) {
-						if (options.requestLogging) logRequest(req.method, url.pathname, 404, startTime);
+						if (options.requestLogging)
+							logRequest(req.method, url.pathname, 404, startTime);
 						return new Response("Session not found", { status: 404 });
 					} else {
-						if (options.requestLogging) logRequest(req.method, url.pathname, 400, startTime);
+						if (options.requestLogging)
+							logRequest(req.method, url.pathname, 400, startTime);
 						return new Response("Bad Request", { status: 400 });
 					}
 
@@ -191,7 +196,13 @@ function createBunHttpTransport(options: TransportOptions): ManagedTransport {
 					}
 
 					if (options.requestLogging) {
-						logRequest(req.method, url.pathname, response.status, startTime, transport.sessionId);
+						logRequest(
+							req.method,
+							url.pathname,
+							response.status,
+							startTime,
+							transport.sessionId,
+						);
 					}
 
 					return response;
@@ -237,7 +248,8 @@ function createNodeHttpTransport(options: TransportOptions): ManagedTransport {
 				const mod = await import("express");
 				// Handle both ESM default and CJS interop
 				expressFn = (mod.default ?? mod) as (...args: unknown[]) => unknown;
-				expressJson = (mod.default?.json ?? (mod as Record<string, unknown>).json) as (
+				expressJson = (mod.default?.json ??
+					(mod as Record<string, unknown>).json) as (
 					...args: unknown[]
 				) => unknown;
 			} catch {
@@ -247,8 +259,14 @@ function createNodeHttpTransport(options: TransportOptions): ManagedTransport {
 			}
 
 			let StreamableTransport: {
-				new (opts: Record<string, unknown>): Transport & {
-					handleRequest(req: unknown, res: unknown, body?: unknown): Promise<void>;
+				new (
+					opts: Record<string, unknown>,
+				): Transport & {
+					handleRequest(
+						req: unknown,
+						res: unknown,
+						body?: unknown,
+					): Promise<void>;
 					sessionId?: string;
 				};
 			};
@@ -257,7 +275,8 @@ function createNodeHttpTransport(options: TransportOptions): ManagedTransport {
 				const mod = await import(
 					"@modelcontextprotocol/sdk/server/streamableHttp.js"
 				);
-				StreamableTransport = mod.StreamableHTTPServerTransport as typeof StreamableTransport;
+				StreamableTransport =
+					mod.StreamableHTTPServerTransport as typeof StreamableTransport;
 			} catch {
 				throw new Error(
 					"StreamableHTTPServerTransport not available in SDK. Update @modelcontextprotocol/sdk.",
@@ -273,7 +292,9 @@ function createNodeHttpTransport(options: TransportOptions): ManagedTransport {
 			const sessions = new Map<string, SessionTransport>();
 
 			const isLocalhost =
-				options.host === "127.0.0.1" || options.host === "localhost" || options.host === "::1";
+				options.host === "127.0.0.1" ||
+				options.host === "localhost" ||
+				options.host === "::1";
 
 			// CORS middleware
 			// biome-ignore lint/suspicious/noExplicitAny: Express middleware types
@@ -369,7 +390,9 @@ function createNodeHttpTransport(options: TransportOptions): ManagedTransport {
 // Factory
 // ------------------------------------------------------------------
 
-export function createHttpTransport(options: TransportOptions): ManagedTransport {
+export function createHttpTransport(
+	options: TransportOptions,
+): ManagedTransport {
 	if (isBun()) {
 		return createBunHttpTransport(options);
 	}
