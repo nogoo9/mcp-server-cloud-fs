@@ -1,5 +1,4 @@
 #!/usr/bin/env bun
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { FilesystemStore } from "./cache/filesystem.js";
 import type { CacheStore } from "./cache/interface.js";
 import { MemoryStore } from "./cache/memory.js";
@@ -13,6 +12,11 @@ import { MemoryProvider } from "./providers/memory.js";
 import { S3Provider } from "./providers/s3.js";
 import { SqliteProvider } from "./providers/sqlite.js";
 import { createMcpServer } from "./server.js";
+import {
+	createTransport,
+	DEFAULT_TRANSPORT_OPTIONS,
+	type TransportType,
+} from "./transports/index.js";
 import { VirtualFS } from "./vfs.js";
 
 function usage(): never {
@@ -25,20 +29,41 @@ Providers:
   memory  In-memory (ephemeral, for demos). Root URI: mem://bucket-name
   sqlite  SQLite (persistent local). Root URI: sqlite://bucket-name
 
-Options:
-  --region <region>               Provider region (S3, GCS)
-  --endpoint <url>                Custom endpoint (S3-compatible: MinIO, RustFS)
+Transport & Network:
+  --transport <stdio|http|ws>    Transport protocol (default: stdio)
+  --port <number>                Listen port for http/ws (default: 3000)
+  --host <address>               Bind address for http/ws (default: 127.0.0.1)
+
+Authentication (http/ws only):
+  --auth <none|builtin|external> Auth mode (default: none)
+  --auth-issuer <url>            OAuth issuer URL (builtin mode)
+  --auth-jwks-uri <url>          JWKS URI (external mode)
+  --auth-audience <string>       Expected token audience (external mode)
+  --auth-client-credentials      Enable Client Credentials ext-auth flow
+  --auth-enterprise-idp <url>    Enable Enterprise-Managed Authorization
+
+Production (http/ws only):
+  --cors-origin <origin>         Allowed CORS origin (repeatable)
+  --rate-limit <req/min>         Rate limit per client (default: 0 = disabled)
+  --rate-limit-burst <n>         Burst allowance (default: 10)
+  --request-logging              Enable structured JSON request logging
+
+Storage & Cache:
+  --region <region>              Provider region (S3, GCS)
+  --endpoint <url>               Custom endpoint (S3-compatible: MinIO, RustFS)
   --cache-store <memory|fs|redis> Cache backend (default: memory)
-  --cache-ttl <seconds>           Cache TTL in seconds (default: 60)
-  --sync-debounce <ms>            Write debounce window in ms (default: 2000)
-  --cache-dir <path>              Required when --cache-store fs
-  --no-cache                      Disable caching (pass-through mode)
-  --enable-delete                 Enable the delete_file tool (disabled by default)
-  --grep-max-objects <n>          Max objects grep_files will scan per call (default: 1000)
-  --gcs-endpoint <url>            Custom endpoint for GCS (e.g. fake-gcs-server for testing)
-  --enable-shell                  Enable the shell tool (disabled by default)
-  --sqlite-db <path>              SQLite database file path (required for sqlite provider)
-  --seed-demo                     Seed the VFS with sample files for demo / exploration
+  --cache-ttl <seconds>          Cache TTL in seconds (default: 60)
+  --sync-debounce <ms>           Write debounce window in ms (default: 2000)
+  --cache-dir <path>             Required when --cache-store fs
+  --no-cache                     Disable caching (pass-through mode)
+  --gcs-endpoint <url>           Custom endpoint for GCS
+  --sqlite-db <path>             SQLite database file path
+
+Tools:
+  --enable-delete                Enable the delete_file tool (disabled by default)
+  --enable-shell                 Enable the shell tool (disabled by default)
+  --grep-max-objects <n>         Max objects grep_files will scan per call (default: 1000)
+  --seed-demo                    Seed the VFS with sample files for demo / exploration
 
 Credentials are always sourced from SDK credential chains (env, ~/.aws, ADC, etc.).
 Redis URL via env: REDIS_URL (default: redis://localhost:6379)
@@ -62,6 +87,20 @@ interface CliArgs {
 	enableShell: boolean;
 	sqliteDb?: string;
 	seedDemo: boolean;
+	// v0.4.0 — transport & production
+	transport: TransportType;
+	port: number;
+	host: string;
+	auth: "none" | "builtin" | "external";
+	authIssuer?: string;
+	authJwksUri?: string;
+	authAudience?: string;
+	authClientCredentials: boolean;
+	authEnterpriseIdp?: string;
+	corsOrigins: string[];
+	rateLimit: number;
+	rateLimitBurst: number;
+	requestLogging: boolean;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -86,6 +125,21 @@ function parseArgs(argv: string[]): CliArgs {
 	let enableShell = false;
 	let sqliteDb: string | undefined;
 	let seedDemo = false;
+
+	// v0.4.0 — transport & production flags
+	let transport: TransportType = "stdio";
+	let port = DEFAULT_TRANSPORT_OPTIONS.port;
+	let host = DEFAULT_TRANSPORT_OPTIONS.host;
+	let auth: "none" | "builtin" | "external" = "none";
+	let authIssuer: string | undefined;
+	let authJwksUri: string | undefined;
+	let authAudience: string | undefined;
+	let authClientCredentials = false;
+	let authEnterpriseIdp: string | undefined;
+	const corsOrigins: string[] = [];
+	let rateLimit = 0;
+	let rateLimitBurst = 10;
+	let requestLogging = false;
 
 	for (let i = 1; i < args.length; i++) {
 		const arg = args[i]!;
@@ -135,6 +189,47 @@ function parseArgs(argv: string[]): CliArgs {
 			sqliteDb = args[++i];
 		} else if (arg === "--seed-demo") {
 			seedDemo = true;
+			// v0.4.0 — transport & production flags
+		} else if (arg === "--transport") {
+			const val = args[++i];
+			if (val !== "stdio" && val !== "http" && val !== "ws") {
+				console.error(
+					`Invalid --transport value: ${String(val)}. Must be stdio, http, or ws.`,
+				);
+				usage();
+			}
+			transport = val;
+		} else if (arg === "--port") {
+			port = Number(args[++i]);
+		} else if (arg === "--host") {
+			host = args[++i]!;
+		} else if (arg === "--auth") {
+			const val = args[++i];
+			if (val !== "none" && val !== "builtin" && val !== "external") {
+				console.error(
+					`Invalid --auth value: ${String(val)}. Must be none, builtin, or external.`,
+				);
+				usage();
+			}
+			auth = val;
+		} else if (arg === "--auth-issuer") {
+			authIssuer = args[++i];
+		} else if (arg === "--auth-jwks-uri") {
+			authJwksUri = args[++i];
+		} else if (arg === "--auth-audience") {
+			authAudience = args[++i];
+		} else if (arg === "--auth-client-credentials") {
+			authClientCredentials = true;
+		} else if (arg === "--auth-enterprise-idp") {
+			authEnterpriseIdp = args[++i];
+		} else if (arg === "--cors-origin") {
+			corsOrigins.push(args[++i]!);
+		} else if (arg === "--rate-limit") {
+			rateLimit = Number(args[++i]);
+		} else if (arg === "--rate-limit-burst") {
+			rateLimitBurst = Number(args[++i]);
+		} else if (arg === "--request-logging") {
+			requestLogging = true;
 		} else {
 			console.error(`Unknown argument: ${arg}`);
 			usage();
@@ -172,6 +267,20 @@ function parseArgs(argv: string[]): CliArgs {
 		enableShell,
 		...(sqliteDb !== undefined && { sqliteDb }),
 		seedDemo,
+		// v0.4.0
+		transport,
+		port,
+		host,
+		auth,
+		...(authIssuer !== undefined && { authIssuer }),
+		...(authJwksUri !== undefined && { authJwksUri }),
+		...(authAudience !== undefined && { authAudience }),
+		authClientCredentials,
+		...(authEnterpriseIdp !== undefined && { authEnterpriseIdp }),
+		corsOrigins,
+		rateLimit,
+		rateLimitBurst,
+		requestLogging,
 	};
 }
 
@@ -220,7 +329,7 @@ Welcome to the **cloud-fs** interactive shell!
 			"data/config.json",
 			`{
   "app": "cloud-fs-demo",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "database": {
     "host": "localhost",
     "port": 5432,
@@ -357,12 +466,17 @@ npx cloud-fs-mcp s3 s3://my-bucket --enable-shell
 			"docs/changelog.md",
 			`# Changelog
 
+## v0.4.0
+- Multi-transport: STDIO, Streamable HTTP, WebSocket
+- OAuth 2.1 authentication (builtin + external IdP)
+- ext-auth extensions (Client Credentials, Enterprise-Managed)
+- Rate limiting, CORS, health checks, structured logging
+
 ## v0.3.0
 - Added in-memory and SQLite providers
 - Interactive shell with 17 POSIX-like commands
 - Pipe and redirect support
 - xterm.js MCP App for terminal UI
-- Magic-byte content-type detection
 
 ## v0.2.0
 - VFS layer with cache coherence
@@ -473,10 +587,26 @@ async function main(): Promise<void> {
 		grepMaxObjects: args.grepMaxObjects,
 		enableShell: args.enableShell,
 	});
-	const transport = new StdioServerTransport();
-	await server.connect(transport);
+
+	// Create and start the selected transport
+	const managed = await createTransport(args.transport, {
+		port: args.port,
+		host: args.host,
+		corsOrigins: args.corsOrigins,
+		auth: args.auth,
+		authIssuer: args.authIssuer,
+		authJwksUri: args.authJwksUri,
+		authAudience: args.authAudience,
+		authClientCredentials: args.authClientCredentials,
+		authEnterpriseIdp: args.authEnterpriseIdp,
+		rateLimit: args.rateLimit,
+		rateLimitBurst: args.rateLimitBurst,
+		requestLogging: args.requestLogging,
+	});
+	await managed.start(server);
+
 	console.error(
-		`cloud-fs-mcp started — provider: ${args.providerName}, roots: ${args.rootUris.join(", ")}`,
+		`cloud-fs-mcp started — transport: ${args.transport}, provider: ${args.providerName}, roots: ${args.rootUris.join(", ")}`,
 	);
 }
 

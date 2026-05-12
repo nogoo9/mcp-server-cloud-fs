@@ -1,0 +1,189 @@
+name: Documentation
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    types: [opened, synchronize, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: docs-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Build and deploy versioned docs on tag push
+  deploy-version:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Build docs for version
+        run: |
+          export VITEPRESS_BASE="/mcp-server-cloud-fs/${{ steps.version.outputs.version }}/"
+          bun run docs:build
+
+      - name: Prepare deploy directory
+        run: |
+          mkdir -p deploy/${{ steps.version.outputs.version }}
+          cp -r docs/.vitepress/dist/* deploy/${{ steps.version.outputs.version }}/
+
+          # Create /latest/ redirect
+          mkdir -p deploy/latest
+          cat > deploy/latest/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta http-equiv="refresh" content="0;url=/mcp-server-cloud-fs/${{ steps.version.outputs.version }}/">
+            <link rel="canonical" href="/mcp-server-cloud-fs/${{ steps.version.outputs.version }}/">
+          </head>
+          <body>Redirecting to <a href="/mcp-server-cloud-fs/${{ steps.version.outputs.version }}/">${{ steps.version.outputs.version }}</a>...</body>
+          </html>
+          EOF
+
+          # Generate landing page
+          bun scripts/docs-landing.ts deploy
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: deploy
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Build and deploy PR preview docs
+  deploy-pr-preview:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build docs for PR preview
+        run: |
+          export VITEPRESS_BASE="/mcp-server-cloud-fs/pr/${{ github.event.pull_request.number }}/"
+          bun run docs:build
+
+      - name: Prepare deploy directory
+        run: |
+          mkdir -p deploy/pr/${{ github.event.pull_request.number }}
+          cp -r docs/.vitepress/dist/* deploy/pr/${{ github.event.pull_request.number }}/
+
+          # Generate landing page
+          bun scripts/docs-landing.ts deploy
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: deploy
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Comment PR with preview link
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://nogoo9.github.io/mcp-server-cloud-fs/pr/${prNumber}/`;
+            const body = `📖 **Docs Preview:** [${previewUrl}](${previewUrl})\n\nThis preview will be removed when the PR is closed.`;
+
+            // Check for existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.data.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Docs Preview')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+
+  # Clean up PR preview on close
+  cleanup-pr-preview:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Comment PR cleanup notice
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.data.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Docs Preview')
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: `📖 **Docs Preview:** Cleaned up after PR close.`,
+              });
+            }

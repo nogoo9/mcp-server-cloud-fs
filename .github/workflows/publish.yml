@@ -32,6 +32,9 @@ jobs:
       - name: Test
         run: bun test
 
+      - name: HTTP E2E tests
+        run: bun run test:e2e:http
+
       - name: Build
         run: bun run build
 

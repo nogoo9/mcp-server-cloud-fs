@@ -4,6 +4,84 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.0] — 2026-05-12
+
+### Added
+
+- **Documentation site** — VitePress-powered docs deployed to GitHub Pages with versioned releases, PR previews, full-text search, and dark mode ([nogoo9.github.io/mcp-server-cloud-fs](https://nogoo9.github.io/mcp-server-cloud-fs/))
+- **Streamable HTTP transport** — deploy `cloud-fs-mcp` as a remote HTTP service with full [MCP Streamable HTTP](https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http) support:
+  - **Dual runtime**: Bun-native via `WebStandardStreamableHTTPServerTransport` + `Bun.serve()` (zero Express dependency), Node.js via `StreamableHTTPServerTransport` + Express
+  - Runtime auto-detection at startup — falls back gracefully based on available APIs
+  - Stateful session management with **UUID v7** (time-sortable, RFC 9562) session IDs
+  - SSE streaming for server-to-client notifications and tool progress
+  - EventStore support for resumability — clients can reconnect and resume where they left off
+  - `--transport http` CLI flag (default: `stdio` for backward compatibility)
+  - `--port <number>` (default: 3000) and `--host <address>` (default: 127.0.0.1) flags
+- **WebSocket transport** — low-latency bidirectional transport using Bun-native `Bun.serve()` WebSocket:
+  - JSON-RPC message framing over WS
+  - Session tracking with UUID v7 assigned on WebSocket upgrade
+  - WS ping/pong heartbeat for connection health
+  - `--transport ws` CLI flag
+- **OAuth 2.1 authentication** — three auth modes selectable via `--auth`:
+  - `none` (default) — no auth, same as v0.3.0
+  - `builtin` — self-hosted OAuth 2.1 Authorization Server using the MCP SDK's `mcpAuthRouter()`:
+    - Authorization Code grant with **mandatory PKCE**
+    - Refresh token rotation (single-use)
+    - Dynamic Client Registration
+    - `/.well-known/oauth-authorization-server` metadata discovery (RFC 8414)
+    - `/.well-known/oauth-protected-resource` metadata (RFC 9728)
+  - `external` — validate bearer tokens against an external IdP (Okta, Auth0, Keycloak) via JWKS:
+    - Remote JWKS key fetching and caching via `jose` library
+    - JWT signature, issuer, audience, and expiry validation
+    - Token introspection fallback for opaque tokens
+- **ext-auth: OAuth Client Credentials** ([MCP ext-auth](https://github.com/modelcontextprotocol/ext-auth)) — machine-to-machine authentication for CI/CD pipelines, background services, and automated workflows:
+  - `client_credentials` grant type support
+  - JWT assertion authentication (`private_key_jwt` per RFC 7523)
+  - Client secret authentication (`client_secret_basic`)
+  - Server metadata advertises `token_endpoint_auth_methods_supported`
+  - `--auth-client-credentials` CLI flag to enable
+- **ext-auth: Enterprise-Managed Authorization** ([MCP ext-auth](https://github.com/modelcontextprotocol/ext-auth)) — SSO via corporate Identity Provider for zero-friction enterprise onboarding:
+  - Identity Assertion JWT Authorization Grant (ID-JAG) validation
+  - Token exchange integration (RFC 8693) with enterprise IdP
+  - JWT Authorization Grant processing (RFC 7523 §2.1)
+  - Supports both OpenID Connect ID Tokens and SAML assertions as subject tokens
+  - `--auth-enterprise-idp <url>` CLI flag to enable
+- **Granular OAuth scopes** — tool-level access control:
+  - `cloud-fs:read` — read tools (read_file, read_text_file, read_media_file, etc.)
+  - `cloud-fs:write` — write tools (write_file, edit_file)
+  - `cloud-fs:delete` — delete_file tool
+  - `cloud-fs:search` — search and grep tools
+  - `cloud-fs:shell` — shell tool
+  - `cloud-fs:admin` — all tools
+- **Rate limiting** — token bucket algorithm with configurable sustained rate and burst capacity:
+  - In-memory backend for single-process deployments
+  - Redis backend for distributed deployments (uses existing optional `ioredis` peer dep)
+  - Per-client / per-IP counters with automatic cleanup
+  - Returns `429 Too Many Requests` with `Retry-After` header
+  - Disabled by default — opt-in via `--rate-limit <req/min>` and `--rate-limit-burst <n>`
+- **CORS** — strict cross-origin request handling:
+  - Allowlist-based origin enforcement via `--cors-origin <origin>` (repeatable)
+  - Exposes `Mcp-Session-Id` and `Mcp-Protocol-Version` headers
+  - No wildcards in production; localhost auto-allows `*` for dev convenience
+- **Health check endpoints** — Kubernetes-convention liveness and readiness probes:
+  - `/healthz` — liveness probe (always `200 OK` if the process is alive)
+  - `/readyz` — readiness probe (checks VFS hydration and provider connectivity)
+- **Structured request logging** — JSON audit trail to stderr:
+  - Fields: timestamp, sessionId, toolName, userId (from auth), latencyMs, statusCode
+  - `--request-logging` flag to enable
+- **DNS rebinding protection** — automatically applied when binding to localhost addresses
+
+### Changed
+
+- `express` is now an optional peer dependency (loaded only when `--transport http` on Node.js)
+- Session IDs use UUID v7 (time-sortable) instead of UUID v4
+
+### Dependencies
+
+- Added `jose` — JWT/JWKS verification (zero native deps, works Bun + Node)
+- Added `uuidv7` — RFC 9562 UUID v7 generation
+- Added optional peer: `express` (for Node.js HTTP transport)
+
 ## [0.3.0] — 2026-05-12
 
 ### Added

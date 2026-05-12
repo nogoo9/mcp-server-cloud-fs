@@ -7,3 +7,5 @@ coverage/
 .worktrees/
 docs/superpowers
 .mcpregistry*_token
+docs/.vitepress/cache
+docs/.vitepress/dist
