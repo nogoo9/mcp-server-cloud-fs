@@ -1,5 +1,6 @@
 // src/providers/sqlite.test.ts
 import { afterEach, describe, expect, it } from "bun:test";
+import { randomBytes } from "node:crypto";
 import { unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -16,7 +17,7 @@ const ROOT: ParsedRoot = {
 function makeTmpDb(): string {
 	return join(
 		tmpdir(),
-		`cloud-fs-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+		`cloud-fs-test-${Date.now()}-${randomBytes(4).toString("hex")}.db`,
 	);
 }
 

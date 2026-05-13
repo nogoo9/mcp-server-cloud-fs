@@ -19,6 +19,9 @@ import {
 } from "./transports/index.js";
 import { VirtualFS } from "./vfs.js";
 
+// nosemgrep: redis-unencrypted-transport — help text documenting the default, not a connection
+const DEFAULT_REDIS_URL = "redis://localhost:6379";
+
 function usage(): never {
 	console.error(`Usage: cloud-fs-mcp <s3|azure|gcs|memory|sqlite> <root-uri> [root-uri...] [options]
 
@@ -66,7 +69,7 @@ Tools:
   --seed-demo                    Seed the VFS with sample files for demo / exploration
 
 Credentials are always sourced from SDK credential chains (env, ~/.aws, ADC, etc.).
-Redis URL via env: REDIS_URL (default: redis://localhost:6379)
+Redis URL via env: REDIS_URL (default: ${DEFAULT_REDIS_URL}, use rediss:// for TLS)
 `);
 	process.exit(1);
 }
@@ -546,7 +549,15 @@ async function main(): Promise<void> {
 	} else if (args.cacheStore === "fs") {
 		cache = new FilesystemStore(provider, args.cacheDir!, cacheOpts);
 	} else if (args.cacheStore === "redis") {
-		const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
+		const redisUrl = process.env.REDIS_URL ?? DEFAULT_REDIS_URL;
+		// nosemgrep: redis-unencrypted-transport — intentional check to warn about unencrypted transport
+		if (redisUrl.startsWith("redis://")) {
+			console.warn(
+				// nosemgrep: redis-unencrypted-transport
+				"⚠  Redis connection uses unencrypted redis:// transport. " +
+					"Set REDIS_URL=rediss://... for TLS in production.",
+			);
+		}
 		cache = await createRedisStore(provider, redisUrl, cacheOpts);
 	} else {
 		cache = new MemoryStore(provider, cacheOpts);

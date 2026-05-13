@@ -6,11 +6,12 @@
 // connects via the SDK's StreamableHTTPClientTransport.
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { randomInt } from "node:crypto";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Subprocess } from "bun";
 
-const PORT = 19384 + Math.floor(Math.random() * 1000);
+const PORT = 19384 + randomInt(1000);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 let proc: Subprocess | null = null;

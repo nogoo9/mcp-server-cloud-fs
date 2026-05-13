@@ -118,7 +118,7 @@ async function spawnMcpServer(extraArgs: string[] = []): Promise<McpHandle> {
 			...process.env,
 			AWS_ACCESS_KEY_ID: "minioadmin",
 			AWS_SECRET_ACCESS_KEY: "minioadmin",
-			REDIS_URL: "redis://localhost:6379",
+			REDIS_URL: "redis://localhost:6379", // nosemgrep: redis-unencrypted-transport
 		},
 		stderr: "pipe",
 	});
