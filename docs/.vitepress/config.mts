@@ -1,4 +1,6 @@
 import { defineConfig } from "vitepress";
+import typedocSidebar from "../reference/api/typedoc-sidebar.json";
+import internalsSidebar from "../reference/internals/typedoc-sidebar.json";
 
 export default defineConfig({
 	title: "Cloud FS MCP Server",
@@ -38,6 +40,7 @@ export default defineConfig({
 		nav: [
 			{ text: "Guide", link: "/guide/getting-started" },
 			{ text: "Reference", link: "/reference/cli" },
+			{ text: "API", link: "/reference/api/" },
 			{ text: "Architecture", link: "/architecture/vfs" },
 			{ text: "Development", link: "/development/contributing" },
 		],
@@ -48,11 +51,27 @@ export default defineConfig({
 					text: "Guide",
 					items: [
 						{ text: "Getting Started", link: "/guide/getting-started" },
+						{ text: "Interactive Shell", link: "/guide/shell" },
+						{ text: "AI Agent Skill", link: "/guide/ai-skill" },
 						{ text: "Transports", link: "/guide/transports" },
 						{ text: "Authentication", link: "/guide/authentication" },
 						{ text: "Production Features", link: "/guide/production" },
 						{ text: "Provider Setup", link: "/guide/providers" },
 					],
+				},
+			],
+			"/reference/api/": [
+				{
+					text: "API Reference",
+					link: "/reference/api/",
+					items: typedocSidebar,
+				},
+			],
+			"/reference/internals/": [
+				{
+					text: "Internals Reference",
+					link: "/reference/internals/",
+					items: internalsSidebar,
 				},
 			],
 			"/reference/": [
@@ -61,7 +80,8 @@ export default defineConfig({
 					items: [
 						{ text: "CLI Reference", link: "/reference/cli" },
 						{ text: "Tool Reference", link: "/reference/tools" },
-						{ text: "Programmatic API", link: "/reference/api" },
+						{ text: "API Reference", link: "/reference/api/" },
+						{ text: "Internals Reference", link: "/reference/internals/" },
 					],
 				},
 			],

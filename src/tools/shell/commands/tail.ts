@@ -1,6 +1,6 @@
 // src/tools/shell/commands/tail.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -34,7 +34,7 @@ export const tail: ShellCommandHandler = async (args, ctx, stdin) => {
 
 	let text: string;
 	if (paths.length > 0) {
-		const { root, key } = resolveToolPath(ctx.roots, paths[0]!);
+		const { root, key } = resolveShellPath(ctx.roots, paths[0]!, ctx.cwd);
 		const buffer = await ctx.vfs.get(root, key);
 		text = buffer.toString("utf8");
 	} else if (stdin !== null) {

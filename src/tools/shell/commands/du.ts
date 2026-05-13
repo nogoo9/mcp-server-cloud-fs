@@ -1,6 +1,6 @@
 // src/tools/shell/commands/du.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -33,7 +33,7 @@ export const du: ShellCommandHandler = async (args, ctx, _stdin) => {
 	const output: string[] = [];
 
 	for (const path of paths) {
-		const { root, key } = resolveToolPath(ctx.roots, path);
+		const { root, key } = resolveShellPath(ctx.roots, path, ctx.cwd);
 		const prefix = key ? `${key}/` : "";
 		const { objects } = await ctx.vfs.list(root, prefix);
 

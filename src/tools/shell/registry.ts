@@ -2,6 +2,7 @@
 // Maps command names to their handler functions.
 
 import { cat } from "./commands/cat.js";
+import { cd } from "./commands/cd.js";
 import { cp } from "./commands/cp.js";
 import { diff } from "./commands/diff.js";
 import { du } from "./commands/du.js";
@@ -9,6 +10,7 @@ import { echo } from "./commands/echo.js";
 import { find } from "./commands/find.js";
 import { grep } from "./commands/grep.js";
 import { head } from "./commands/head.js";
+import { jq } from "./commands/jq.js";
 import { ls } from "./commands/ls.js";
 import { mkdir } from "./commands/mkdir.js";
 import { mv } from "./commands/mv.js";
@@ -42,4 +44,6 @@ export const COMMANDS: ReadonlyMap<string, ShellCommandHandler> = new Map<
 	["echo", echo],
 	["tee", tee],
 	["diff", diff],
+	["jq", jq],
+	["cd", cd],
 ]);

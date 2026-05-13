@@ -4,6 +4,7 @@
 
 import * as jose from "jose";
 
+/** Decoded JWT claim payload. @category Auth */
 export interface TokenClaims {
 	/** Subject (user identifier). */
 	sub?: string;
@@ -25,6 +26,7 @@ export interface TokenClaims {
 	[key: string]: unknown;
 }
 
+/** Configuration for {@link ExternalTokenVerifier}. @category Auth */
 export interface VerifierOptions {
 	/** JWKS URI to fetch signing keys from. */
 	jwksUri: string;
@@ -38,6 +40,8 @@ export interface VerifierOptions {
  * External token verifier.
  * Validates bearer JWTs against a remote JWKS endpoint.
  * Caches keys via jose's built-in JWKS cache.
+ *
+ * @category Auth
  */
 export class ExternalTokenVerifier {
 	private readonly _jwks: ReturnType<typeof jose.createRemoteJWKSet>;
@@ -65,6 +69,7 @@ export class ExternalTokenVerifier {
 	}
 }
 
+/** Configuration for {@link EnterpriseAuthVerifier}. @category Auth */
 export interface EnterpriseAuthOptions {
 	/** JWKS URI for the enterprise IdP. */
 	jwksUri: string;
@@ -84,6 +89,8 @@ export interface EnterpriseAuthOptions {
  * 2. Client exchanges IdP token for ID-JAG via Token Exchange (RFC 8693)
  * 3. Client presents ID-JAG to this MCP server (RFC 7523 §2.1)
  * 4. This verifier validates the ID-JAG's signature, issuer, audience, expiry
+ *
+ * @category Auth
  */
 export class EnterpriseAuthVerifier {
 	private readonly _verifier: ExternalTokenVerifier;
@@ -109,6 +116,8 @@ export class EnterpriseAuthVerifier {
 /**
  * Extract a bearer token from an Authorization header.
  * @returns The raw token string, or null if not present/malformed.
+ *
+ * @category Auth
  */
 export function extractBearerToken(
 	authHeader: string | null | undefined,

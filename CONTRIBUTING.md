@@ -16,6 +16,35 @@ proto use          # installs Bun 1.3.11 from .prototools
 bun install
 ```
 
+To verify your full environment (tools, versions, skills) in one shot, run the `/setup-env` workflow in your AI assistant, or check the requirements manually in `.agents/workflows/setup-env.md`.
+
+**Required tools:**
+
+| Tool | Purpose | Min version |
+|---|---|---|
+| [Bun](https://bun.sh) | Runtime, test runner, package manager | 1.3.11 (pinned in `.prototools`) |
+| [Docker + Compose](https://docs.docker.com/get-docker/) | Integration & E2E infra tests | Engine 20+, Compose v2 |
+| [Semgrep CLI](https://semgrep.dev/docs/getting-started) | SAST scan (`/security` workflow, pre-push) | 1.x |
+| [Git](https://git-scm.com) | Version control | 2.x |
+
+[Proto](https://moonrepo.dev/proto) is optional — it manages the pinned Bun version via `.prototools`. Without it, install Bun 1.3.11 manually.
+
+## AI Agent Skills
+
+Skills live in `.agents/skills/` (gitignored) and are installed from [semgrep/skills](https://github.com/semgrep/skills):
+
+```bash
+bun x skills add semgrep/skills
+```
+
+This installs three skills used by the agent workflows:
+
+| Skill | Purpose |
+|---|---|
+| `semgrep` | SAST scanning — used by `/security` workflow before every push |
+| `code-security` | Secure coding guidelines for TypeScript/Node.js |
+| `llm-security` | OWASP LLM Top 10 for AI-adjacent code reviews |
+
 ## Running tests
 
 ### Test tiers

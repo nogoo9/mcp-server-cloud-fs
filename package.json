@@ -1,13 +1,31 @@
 {
   "name": "@nogoo9/mcp-server-cloud-fs",
   "mcpName": "io.github.nogoo9/mcp-server-cloud-fs",
-  "version": "0.4.0",
-  "description": "Cloud replacement for mcp-server-filesystem — 20 tools for S3, Azure Blob, and GCS",
+  "version": "0.5.0",
+  "description": "High-performance MCP server and library providing a cloud-native replacement for mcp-server-filesystem. Supports S3, Azure Blob, GCS, and SQLite with VFS cache coherence.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "cloud-storage",
+    "s3",
+    "aws-s3",
+    "azure-blob",
+    "gcs",
+    "google-cloud-storage",
+    "filesystem",
+    "vfs",
+    "virtual-filesystem",
+    "ai-agent",
+    "claude-code",
+    "gemini"
+  ],
   "author": "eterna2",
   "contributors": ["eterna2"],
   "type": "module",
   "bin": {
-    "cloud-fs-mcp": "dist/index.js"
+    "cloud-fs-mcp": "dist/index.js",
+    "cloud-fs": "dist/cli-tui.js"
   },
   "main": "dist/lib.js",
   "types": "dist/lib.d.ts",
@@ -37,15 +55,18 @@
     "infra:setup": "docker compose -f infra/docker-compose.yml up -d",
     "infra:logs": "docker compose -f infra/docker-compose.yml logs",
     "build:app": "vite build -c src/app/vite.config.ts",
-    "inspect": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts",
-    "inspect:memory": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts memory mem://demo --enable-shell --seed-demo",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
+    "inspect": "bun x @modelcontextprotocol/inspector -- bun src/index.ts",
+    "inspect:memory": "bun x @modelcontextprotocol/inspector -- bun src/index.ts memory mem://demo --enable-shell --seed-demo",
+    "docs:typedoc": "typedoc && typedoc --options typedoc.internals.json",
+    "docs:dev": "bun run docs:typedoc && vitepress dev docs",
+    "docs:build": "bun run docs:typedoc && vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "files": [
     "dist/",
     "src/",
+    "skills/",
+    "docs/public/images/*.svg",
     "!src/**/*.test.ts",
     "!src/**/__test-helpers.ts"
   ],
@@ -74,10 +95,18 @@
     "zod": "^3.0.0"
   },
   "peerDependencies": {
-    "ioredis": ""
+    "ioredis": "",
+    "better-sqlite3": "",
+    "nosecone": ""
   },
   "peerDependenciesMeta": {
     "ioredis": {
+      "optional": true
+    },
+    "better-sqlite3": {
+      "optional": true
+    },
+    "nosecone": {
       "optional": true
     }
   },
@@ -89,6 +118,10 @@
     "@xterm/xterm": "^6.0.0",
     "express": "^5.2.1",
     "ioredis": "^5.0.0",
+    "nosecone": "^1.4.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "typedoc-vitepress-theme": "^1.1.2",
     "typescript": "^5.0.0",
     "vite": "^8.0.12",
     "vite-plugin-singlefile": "^2.3.3",

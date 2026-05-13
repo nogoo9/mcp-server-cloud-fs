@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { readFileSync } from "node:fs";
 import { FilesystemStore } from "./cache/filesystem.js";
 import type { CacheStore } from "./cache/interface.js";
 import { MemoryStore } from "./cache/memory.js";
@@ -10,7 +11,7 @@ import { GcsProvider } from "./providers/gcs.js";
 import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
 import { MemoryProvider } from "./providers/memory.js";
 import { S3Provider } from "./providers/s3.js";
-import { SqliteProvider } from "./providers/sqlite.js";
+
 import { createMcpServer } from "./server.js";
 import {
 	createTransport,
@@ -18,6 +19,9 @@ import {
 	type TransportType,
 } from "./transports/index.js";
 import { VirtualFS } from "./vfs.js";
+
+// nosemgrep: redis-unencrypted-transport — help text documenting the default, not a connection
+const DEFAULT_REDIS_URL = "redis://localhost:6379";
 
 function usage(): never {
 	console.error(`Usage: cloud-fs-mcp <s3|azure|gcs|memory|sqlite> <root-uri> [root-uri...] [options]
@@ -47,6 +51,9 @@ Production (http/ws only):
   --rate-limit <req/min>         Rate limit per client (default: 0 = disabled)
   --rate-limit-burst <n>         Burst allowance (default: 10)
   --request-logging              Enable structured JSON request logging
+  --security-headers             Enable security headers via nosecone
+  --security-headers-config <json>       Inline JSON config for nosecone options
+  --security-headers-config-file <path>  Load nosecone config from a JSON file
 
 Storage & Cache:
   --region <region>              Provider region (S3, GCS)
@@ -58,6 +65,7 @@ Storage & Cache:
   --no-cache                     Disable caching (pass-through mode)
   --gcs-endpoint <url>           Custom endpoint for GCS
   --sqlite-db <path>             SQLite database file path
+  --ca-file <path>               PEM CA bundle for S3-compatible endpoints and Redis TLS
 
 Tools:
   --enable-delete                Enable the delete_file tool (disabled by default)
@@ -66,7 +74,8 @@ Tools:
   --seed-demo                    Seed the VFS with sample files for demo / exploration
 
 Credentials are always sourced from SDK credential chains (env, ~/.aws, ADC, etc.).
-Redis URL via env: REDIS_URL (default: redis://localhost:6379)
+Redis URL via env: REDIS_URL (default: ${DEFAULT_REDIS_URL}, use rediss:// for TLS)
+Custom CA via env: NODE_EXTRA_CA_CERTS=<path> (or use --ca-file <path> for S3-compatible + Redis)
 `);
 	process.exit(1);
 }
@@ -101,6 +110,10 @@ interface CliArgs {
 	rateLimit: number;
 	rateLimitBurst: number;
 	requestLogging: boolean;
+	enableSecurityHeaders: boolean;
+	securityHeadersOptions?: Record<string, unknown>;
+	// v0.4.1 — TLS
+	caFile?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -125,6 +138,7 @@ function parseArgs(argv: string[]): CliArgs {
 	let enableShell = false;
 	let sqliteDb: string | undefined;
 	let seedDemo = false;
+	let caFile: string | undefined;
 
 	// v0.4.0 — transport & production flags
 	let transport: TransportType = "stdio";
@@ -140,6 +154,8 @@ function parseArgs(argv: string[]): CliArgs {
 	let rateLimit = 0;
 	let rateLimitBurst = 10;
 	let requestLogging = false;
+	let enableSecurityHeaders = false;
+	let securityHeadersOptions: Record<string, unknown> | undefined;
 
 	for (let i = 1; i < args.length; i++) {
 		const arg = args[i]!;
@@ -230,6 +246,35 @@ function parseArgs(argv: string[]): CliArgs {
 			rateLimitBurst = Number(args[++i]);
 		} else if (arg === "--request-logging") {
 			requestLogging = true;
+		} else if (arg === "--ca-file") {
+			caFile = args[++i];
+		} else if (arg === "--security-headers") {
+			enableSecurityHeaders = true;
+		} else if (arg === "--security-headers-config") {
+			enableSecurityHeaders = true;
+			try {
+				securityHeadersOptions = JSON.parse(args[++i]!) as Record<
+					string,
+					unknown
+				>;
+			} catch {
+				console.error(
+					"Error: --security-headers-config value must be valid JSON.",
+				);
+				usage();
+			}
+		} else if (arg === "--security-headers-config-file") {
+			enableSecurityHeaders = true;
+			const filePath = args[++i]!;
+			try {
+				const raw = readFileSync(filePath, "utf8");
+				securityHeadersOptions = JSON.parse(raw) as Record<string, unknown>;
+			} catch {
+				console.error(
+					`Error: cannot read or parse --security-headers-config-file: ${filePath}`,
+				);
+				usage();
+			}
 		} else {
 			console.error(`Unknown argument: ${arg}`);
 			usage();
@@ -281,6 +326,10 @@ function parseArgs(argv: string[]): CliArgs {
 		rateLimit,
 		rateLimitBurst,
 		requestLogging,
+		enableSecurityHeaders,
+		...(securityHeadersOptions !== undefined && { securityHeadersOptions }),
+		// v0.4.1
+		...(caFile !== undefined && { caFile }),
 	};
 }
 
@@ -507,11 +556,29 @@ async function main(): Promise<void> {
 	const args = parseArgs(process.argv);
 	const roots = args.rootUris.map(parseUri);
 
+	// Read custom CA PEM once and pass to providers that support it.
+	let caPem: Buffer | undefined;
+	if (args.caFile) {
+		try {
+			caPem = readFileSync(args.caFile);
+		} catch {
+			console.error(`Error: cannot read --ca-file: ${args.caFile}`);
+			process.exit(1);
+		}
+		if (!caPem.toString().includes("-----BEGIN")) {
+			console.error(
+				`Error: --ca-file does not appear to be a valid PEM file: ${args.caFile}`,
+			);
+			process.exit(1);
+		}
+	}
+
 	let provider: StorageProvider;
 	if (args.providerName === "s3") {
 		provider = new S3Provider({
 			...(args.region !== undefined && { region: args.region }),
 			...(args.endpoint !== undefined && { endpoint: args.endpoint }),
+			...(caPem !== undefined && { caPem }),
 		});
 	} else if (args.providerName === "azure") {
 		const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING;
@@ -525,7 +592,8 @@ async function main(): Promise<void> {
 	} else if (args.providerName === "memory") {
 		provider = new MemoryProvider();
 	} else if (args.providerName === "sqlite") {
-		provider = new SqliteProvider({ dbPath: args.sqliteDb! });
+		const { SqliteProvider } = await import("./providers/sqlite.js");
+		provider = await SqliteProvider.create({ dbPath: args.sqliteDb! });
 	} else {
 		provider = new GcsProvider({
 			...(process.env.GOOGLE_CLOUD_PROJECT && {
@@ -546,8 +614,16 @@ async function main(): Promise<void> {
 	} else if (args.cacheStore === "fs") {
 		cache = new FilesystemStore(provider, args.cacheDir!, cacheOpts);
 	} else if (args.cacheStore === "redis") {
-		const redisUrl = process.env.REDIS_URL ?? "redis://localhost:6379";
-		cache = await createRedisStore(provider, redisUrl, cacheOpts);
+		const redisUrl = process.env.REDIS_URL ?? DEFAULT_REDIS_URL;
+		// nosemgrep: redis-unencrypted-transport — intentional check to warn about unencrypted transport
+		if (redisUrl.startsWith("redis://")) {
+			console.warn(
+				// nosemgrep: redis-unencrypted-transport
+				"⚠  Redis connection uses unencrypted redis:// transport. " +
+					"Set REDIS_URL=rediss://... for TLS in production.",
+			);
+		}
+		cache = await createRedisStore(provider, redisUrl, cacheOpts, caPem);
 	} else {
 		cache = new MemoryStore(provider, cacheOpts);
 	}
@@ -602,6 +678,8 @@ async function main(): Promise<void> {
 		rateLimit: args.rateLimit,
 		rateLimitBurst: args.rateLimitBurst,
 		requestLogging: args.requestLogging,
+		enableSecurityHeaders: args.enableSecurityHeaders,
+		securityHeadersOptions: args.securityHeadersOptions,
 	});
 	await managed.start(server);
 

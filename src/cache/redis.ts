@@ -14,6 +14,15 @@ interface RedisClient {
 	del(key: string): Promise<unknown>;
 }
 
+/**
+ * Redis-backed cache store using ioredis.
+ *
+ * Uses Redis `SETEX` for TTL-based storage with debounced write-back.
+ * Requires ioredis as an optional peer dependency — use {@link createRedisStore}
+ * to construct with automatic dependency checking.
+ *
+ * @category Cache
+ */
 export class RedisStore implements CacheStore {
 	private readonly dirtyMap = new Map<string, DirtyMeta>();
 	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -92,13 +101,23 @@ export class RedisStore implements CacheStore {
 /**
  * Loads ioredis at runtime (optional peer dep) and returns a RedisStore.
  * Exits with code 1 and install instructions if ioredis is not installed.
+ *
+ * @param caPem - Custom CA certificate (PEM) for TLS verification. Only used
+ *   when `redisUrl` starts with `rediss://` and a private/self-signed CA is
+ *   in use. For public CAs, `rediss://` alone is sufficient.
  */
 export async function createRedisStore(
 	provider: StorageProvider,
 	redisUrl: string,
 	opts: { ttlMs: number; syncDebounceMs: number },
+	caPem?: Buffer,
 ): Promise<RedisStore> {
-	let ioredis: { default: new (url: string) => RedisClient };
+	let ioredis: {
+		default: new (
+			url: string,
+			options?: Record<string, unknown>,
+		) => RedisClient;
+	};
 	try {
 		ioredis = await import("ioredis");
 	} catch {
@@ -108,6 +127,8 @@ export async function createRedisStore(
 		);
 		process.exit(1);
 	}
-	const client = new ioredis.default(redisUrl);
+	const tlsOptions =
+		caPem && redisUrl.startsWith("rediss://") ? { tls: { ca: caPem } } : {};
+	const client = new ioredis.default(redisUrl, tlsOptions);
 	return new RedisStore(provider, client, opts);
 }

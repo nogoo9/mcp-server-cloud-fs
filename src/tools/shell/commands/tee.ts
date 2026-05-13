@@ -1,6 +1,6 @@
 // src/tools/shell/commands/tee.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -32,7 +32,7 @@ export const tee: ShellCommandHandler = async (args, ctx, stdin) => {
 	}
 
 	for (const path of paths) {
-		const { root, key } = resolveToolPath(ctx.roots, path);
+		const { root, key } = resolveShellPath(ctx.roots, path, ctx.cwd);
 
 		if (appendMode) {
 			let existing = "";

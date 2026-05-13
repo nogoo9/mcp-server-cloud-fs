@@ -27,6 +27,8 @@ async function generateSessionId(): Promise<string> {
 /**
  * WebSocket server transport adapter.
  * Wraps a Bun WebSocket connection to implement the MCP SDK Transport interface.
+ *
+ * @category Transports
  */
 export class WebSocketServerTransport implements Transport {
 	sessionId?: string;
@@ -129,10 +131,11 @@ export function createWsTransport(options: TransportOptions): ManagedTransport {
 				port: options.port,
 				hostname: options.host,
 
-				// biome-ignore lint/suspicious/noExplicitAny: Bun.serve fetch handler types
 				async fetch(
 					req: Request,
-					bunServerRef: any,
+					bunServerRef: {
+						upgrade(req: Request, opts: { data: WsData }): boolean;
+					},
 				): Promise<Response | undefined> {
 					const url = new URL(req.url);
 

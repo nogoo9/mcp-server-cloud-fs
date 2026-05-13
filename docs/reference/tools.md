@@ -57,14 +57,28 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 
 | Tool | Parameters | Description |
 |---|---|---|
-| `shell` ⚡ | `command` | Execute POSIX-like commands. Supports pipes, redirects. **Requires `--enable-shell`.** |
+| `shell` ⚡ | `command` | Execute POSIX-like commands. Supports pipes, redirects, and command list operators. **Requires `--enable-shell`.** |
 
-**Built-in commands:** `ls`, `cat`, `head`, `tail`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `stat`, `find`, `grep`, `wc`, `du`, `echo`, `tee`, `diff`
+**Built-in commands:** `ls`, `cat`, `head`, `tail`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `stat`, `find`, `grep`, `wc`, `du`, `echo`, `tee`, `diff`, `jq`, `cd`
+
+**Supported syntax:**
+
+| Syntax | Description | Example |
+|---|---|---|
+| `cmd1 \| cmd2` | Pipe stdout of `cmd1` to stdin of `cmd2` | `cat s3://b/f \| grep foo \| wc -l` |
+| `cmd > path` | Redirect stdout to file (overwrite) | `echo hello > s3://b/out.txt` |
+| `cmd >> path` | Redirect stdout to file (append) | `date >> s3://b/logs.txt` |
+| `< path cmd` | Redirect file content as stdin | `grep pat < s3://b/f.txt` |
+| `cmd1 && cmd2` | Run `cmd2` only if `cmd1` succeeds | `mkdir s3://b/d && echo created` |
+| `cmd1 \|\| cmd2` | Run `cmd2` only if `cmd1` fails | `cat missing \|\| echo fallback` |
+| `cmd1 ; cmd2` | Always run both commands | `echo a ; echo b` |
 
 ```bash
 shell "ls -l s3://my-bucket/data/"
 shell "cat s3://my-bucket/config.json | grep port | wc -l"
 shell "echo hello world > s3://my-bucket/greeting.txt"
+shell "mkdir s3://my-bucket/reports && echo ready"
+shell "cat s3://my-bucket/primary.json || cat s3://my-bucket/fallback.json"
 ```
 
 ::: warning

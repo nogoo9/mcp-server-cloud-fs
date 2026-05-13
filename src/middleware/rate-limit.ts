@@ -1,6 +1,7 @@
 // src/middleware/rate-limit.ts
 // Token bucket rate limiter — in-memory and Redis backends.
 
+/** Result of a rate limit check. @category Middleware */
 export interface RateLimitResult {
 	/** Whether the request is allowed. */
 	allowed: boolean;
@@ -10,6 +11,7 @@ export interface RateLimitResult {
 	retryAfterSeconds: number;
 }
 
+/** Rate limiter interface. @category Middleware */
 export interface RateLimiter {
 	/** Check if a request from the given key (IP/client) is allowed. */
 	consume(key: string): Promise<RateLimitResult>;
@@ -25,6 +27,8 @@ interface Bucket {
 /**
  * In-memory token bucket rate limiter.
  * Suitable for single-process deployments.
+ *
+ * @category Middleware
  */
 export class InMemoryRateLimiter implements RateLimiter {
 	private readonly _buckets = new Map<string, Bucket>();
@@ -106,7 +110,9 @@ export class InMemoryRateLimiter implements RateLimiter {
 
 /**
  * Create a rate limiter based on configuration.
- * Returns null if rate limiting is disabled (ratePerMinute <= 0).
+ * Returns null if rate limiting is disabled (ratePerMinute ≤ 0).
+ *
+ * @category Middleware
  */
 export function createRateLimiter(
 	ratePerMinute: number,

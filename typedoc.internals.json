@@ -1,0 +1,27 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/vfs.ts",
+    "src/cache/*.ts",
+    "src/providers/*.ts",
+    "src/tools/shell/*.ts",
+    "src/transports/*.ts",
+    "src/auth/*.ts",
+    "src/middleware/*.ts",
+    "src/path-utils.ts",
+    "src/server.ts",
+    "src/bootstrap.ts"
+  ],
+  "entryPointStrategy": "expand",
+  "out": "docs/reference/internals",
+  "docsRoot": "docs",
+  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  "tsconfig": "tsconfig.json",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": false,
+  "excludeExternals": true,
+  "hideGenerator": true,
+  "disableSources": false,
+  "gitRevision": "main"
+}

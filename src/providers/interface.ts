@@ -1,24 +1,60 @@
 // src/providers/interface.ts
 
+/**
+ * Parsed representation of a storage root URI.
+ *
+ * Created by {@link parseUri} from a URI string like `s3://my-bucket/my-prefix`.
+ *
+ * @category Providers
+ */
 export interface ParsedRoot {
+	/** Storage backend scheme. */
 	scheme: "s3" | "az" | "gs" | "mem" | "sqlite";
+	/** Bucket or container name. */
 	bucket: string;
-	prefix: string; // empty string = whole bucket
-	uri: string; // original URI string, e.g. "s3://my-bucket/my-prefix"
+	/** Key prefix — empty string means the entire bucket. */
+	prefix: string;
+	/** Original URI string, e.g. `"s3://my-bucket/my-prefix"`. */
+	uri: string;
 }
 
+/**
+ * Metadata about a single stored object.
+ *
+ * @category Providers
+ */
 export interface ObjectInfo {
+	/** Object key relative to the root prefix. */
 	key: string;
+	/** Size in bytes. */
 	size: number;
+	/** Last modification timestamp. */
 	lastModified: Date;
+	/** MIME type, if known. */
 	contentType?: string;
 }
 
+/**
+ * Result of a prefix-delimited object listing.
+ *
+ * @category Providers
+ */
 export interface ListResult {
+	/** Objects matching the prefix. */
 	objects: ObjectInfo[];
-	prefixes: string[]; // "subdirectory" common prefixes
+	/** Common prefixes ("subdirectories") when a delimiter is used. */
+	prefixes: string[];
 }
 
+/**
+ * Abstract storage backend for cloud object stores.
+ *
+ * Every provider implements CRUD operations scoped to a {@link ParsedRoot}.
+ * Built-in implementations: {@link S3Provider}, {@link AzureProvider},
+ * {@link GcsProvider}, {@link MemoryProvider}, {@link SqliteProvider}.
+ *
+ * @category Providers
+ */
 export interface StorageProvider {
 	getObject(
 		root: ParsedRoot,

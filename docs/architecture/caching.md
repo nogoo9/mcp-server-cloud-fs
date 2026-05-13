@@ -8,7 +8,32 @@ The cache layer sits between the VFS and the storage provider, reducing latency 
 |---|---|---|
 | **Memory** (default) | `--cache-store memory` | In-process, fast, not shared, not persistent. |
 | **Filesystem** | `--cache-store fs --cache-dir <path>` | Survives restarts. |
-| **Redis** | `--cache-store redis` | Shared, persistent. Requires `ioredis` peer dep. `REDIS_URL` env var. |
+| **Redis** | `--cache-store redis` | Shared, persistent. Requires `ioredis` peer dep. `REDIS_URL` env var. Use `rediss://` for TLS. |
+
+::: warning Redis TLS
+When `REDIS_URL` uses the unencrypted `redis://` scheme, the server emits a warning at startup recommending `rediss://` for TLS in production. Local development with `redis://localhost:6379` is fine, but production deployments should always use TLS-encrypted connections.
+:::
+
+## Custom CA Certificates
+
+Two approaches are available when your Redis or S3-compatible endpoint uses a private/self-signed CA:
+
+### `--ca-file <path>` (targeted)
+
+Reads a PEM CA bundle and injects it into specific clients:
+- **Redis** (`rediss://`) — passed as `tls.ca` to `ioredis`
+- **S3-compatible endpoints** (MinIO, RustFS) — passed as a custom `https.Agent` to the S3 client
+
+Not needed for AWS S3, Azure Blob, or GCS — those connect to public cloud endpoints.
+
+### `NODE_EXTRA_CA_CERTS` (runtime-wide)
+
+Node.js/Bun environment variable. Applies to **all** outbound TLS connections — use when a single CA should cover everything, or for Azure/GCS behind a TLS-intercepting proxy:
+
+```bash
+NODE_EXTRA_CA_CERTS=/etc/ssl/certs/my-ca.pem \
+cloud-fs-mcp s3 s3://my-bucket --cache-store redis
+```
 
 ## Write Path
 
@@ -33,8 +58,12 @@ cloud-fs-mcp s3 s3://my-bucket
 # Filesystem cache (survives restarts)
 cloud-fs-mcp s3 s3://my-bucket --cache-store fs --cache-dir /tmp/cloud-fs-cache
 
-# Redis cache (shared across instances)
+# Redis cache (local development)
 REDIS_URL=redis://localhost:6379 \
+cloud-fs-mcp s3 s3://my-bucket --cache-store redis
+
+# Redis cache (production — TLS encrypted)
+REDIS_URL=rediss://my-redis.example.com:6380 \
 cloud-fs-mcp s3 s3://my-bucket --cache-store redis
 
 # No cache (pass-through mode)

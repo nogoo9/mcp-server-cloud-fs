@@ -6,9 +6,10 @@
 // connects via Bun's native WebSocket with JSON-RPC framing.
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { randomInt } from "node:crypto";
 import type { Subprocess } from "bun";
 
-const PORT = 18200 + Math.floor(Math.random() * 1000);
+const PORT = 18200 + randomInt(1000);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const WS_URL = `ws://127.0.0.1:${PORT}/mcp`;
 

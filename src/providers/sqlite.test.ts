@@ -1,5 +1,6 @@
 // src/providers/sqlite.test.ts
 import { afterEach, describe, expect, it } from "bun:test";
+import { randomBytes } from "node:crypto";
 import { unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -16,17 +17,17 @@ const ROOT: ParsedRoot = {
 function makeTmpDb(): string {
 	return join(
 		tmpdir(),
-		`cloud-fs-test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
+		`cloud-fs-test-${Date.now()}-${randomBytes(4).toString("hex")}.db`,
 	);
 }
 
 describe("SqliteProvider", () => {
 	const dbs: string[] = [];
 
-	function createProvider(): SqliteProvider {
+	async function createProvider(): Promise<SqliteProvider> {
 		const path = makeTmpDb();
 		dbs.push(path);
-		return new SqliteProvider({ dbPath: path });
+		return SqliteProvider.create({ dbPath: path });
 	}
 
 	afterEach(() => {
@@ -51,7 +52,7 @@ describe("SqliteProvider", () => {
 	});
 
 	it("put and get an object", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await p.putObject(ROOT, "hello.txt", Buffer.from("world"));
 		const result = await p.getObject(ROOT, "hello.txt");
 		expect(result.toString()).toBe("world");
@@ -59,13 +60,13 @@ describe("SqliteProvider", () => {
 	});
 
 	it("throws on get non-existent key", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await expect(p.getObject(ROOT, "nope")).rejects.toThrow("File not found");
 		p.close();
 	});
 
 	it("supports range reads", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await p.putObject(ROOT, "data.txt", Buffer.from("abcdefghij"));
 		const slice = await p.getObject(ROOT, "data.txt", {
 			startByte: 2,
@@ -76,7 +77,7 @@ describe("SqliteProvider", () => {
 	});
 
 	it("deletes an object", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await p.putObject(ROOT, "temp.txt", Buffer.from("gone"));
 		await p.deleteObject(ROOT, "temp.txt");
 		await expect(p.getObject(ROOT, "temp.txt")).rejects.toThrow(
@@ -86,7 +87,7 @@ describe("SqliteProvider", () => {
 	});
 
 	it("copies an object", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await p.putObject(ROOT, "src.txt", Buffer.from("data"));
 		await p.copyObject(ROOT, "src.txt", "dst.txt");
 		expect((await p.getObject(ROOT, "dst.txt")).toString()).toBe("data");
@@ -94,7 +95,7 @@ describe("SqliteProvider", () => {
 	});
 
 	it("throws on copy non-existent source", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await expect(p.copyObject(ROOT, "nope", "dst")).rejects.toThrow(
 			"File not found",
 		);
@@ -102,7 +103,7 @@ describe("SqliteProvider", () => {
 	});
 
 	it("heads an object", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await p.putObject(ROOT, "info.txt", Buffer.from("hello"));
 		const info = await p.headObject(ROOT, "info.txt");
 		expect(info.key).toBe("info.txt");
@@ -113,13 +114,13 @@ describe("SqliteProvider", () => {
 	});
 
 	it("throws on head non-existent key", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await expect(p.headObject(ROOT, "nope")).rejects.toThrow("File not found");
 		p.close();
 	});
 
 	it("lists objects without delimiter", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await p.putObject(ROOT, "a/1.txt", Buffer.from(""));
 		await p.putObject(ROOT, "a/2.txt", Buffer.from(""));
 		await p.putObject(ROOT, "b/3.txt", Buffer.from(""));
@@ -130,7 +131,7 @@ describe("SqliteProvider", () => {
 	});
 
 	it("lists objects with delimiter", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await p.putObject(ROOT, "dir/sub/file.txt", Buffer.from(""));
 		await p.putObject(ROOT, "dir/root.txt", Buffer.from(""));
 		const result = await p.listObjects(ROOT, "dir/", "/");
@@ -141,7 +142,7 @@ describe("SqliteProvider", () => {
 	});
 
 	it("creates a prefix", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await p.createPrefix(ROOT, "mydir");
 		const result = await p.listObjects(ROOT, "mydir/");
 		expect(result.objects.length).toBe(1);
@@ -152,18 +153,18 @@ describe("SqliteProvider", () => {
 	it("persists data across instances", async () => {
 		const dbPath = makeTmpDb();
 		dbs.push(dbPath);
-		const p1 = new SqliteProvider({ dbPath });
+		const p1 = await SqliteProvider.create({ dbPath });
 		await p1.putObject(ROOT, "persist.txt", Buffer.from("durable"));
 		p1.close();
 
-		const p2 = new SqliteProvider({ dbPath });
+		const p2 = await SqliteProvider.create({ dbPath });
 		const result = await p2.getObject(ROOT, "persist.txt");
 		expect(result.toString()).toBe("durable");
 		p2.close();
 	});
 
 	it("overwrites existing keys", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		await p.putObject(ROOT, "ow.txt", Buffer.from("v1"));
 		await p.putObject(ROOT, "ow.txt", Buffer.from("v2"));
 		expect((await p.getObject(ROOT, "ow.txt")).toString()).toBe("v2");
@@ -171,7 +172,7 @@ describe("SqliteProvider", () => {
 	});
 
 	it("isolates buckets", async () => {
-		const p = createProvider();
+		const p = await createProvider();
 		const root2: ParsedRoot = {
 			scheme: "sqlite",
 			bucket: "other-bucket",

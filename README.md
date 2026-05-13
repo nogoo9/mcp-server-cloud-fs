@@ -1,27 +1,40 @@
-# @nogoo9/mcp-server-cloud-fs
+<p align="center">
+  <img src="docs/public/images/logo.png" alt="nogoo9" width="128" />
+</p>
 
-[![CI](https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml/badge.svg)](https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-GitHub_Pages-blue?logo=github)](https://nogoo9.github.io/mcp-server-cloud-fs/)
-[![Coverage Status](https://coveralls.io/repos/github/nogoo9/mcp-server-cloud-fs/badge.svg?branch=main)](https://coveralls.io/github/nogoo9/mcp-server-cloud-fs?branch=main)
-[![npm](https://img.shields.io/npm/v/@nogoo9/mcp-server-cloud-fs)](https://www.npmjs.com/package/@nogoo9/mcp-server-cloud-fs)
-![NPM Downloads](https://img.shields.io/npm/dm/%40nogoo9%2Fmcp-server-cloud-fs)
-[![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue)](LICENSE)
-[![Built with Claude](https://img.shields.io/badge/Built_with-Claude-d97706?logo=anthropic&logoColor=white)](https://claude.ai)
-[![Built with Antigravity](https://img.shields.io/badge/Built_with-Antigravity-4285F4?logo=google&logoColor=white)](https://deepmind.google)
+<h1 align="center">@nogoo9/mcp-server-cloud-fs</h1>
 
+<p align="center">
+  <a href="https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml"><img src="https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://nogoo9.github.io/mcp-server-cloud-fs/"><img src="https://img.shields.io/badge/docs-GitHub_Pages-blue?logo=github" alt="Docs"></a>
+  <a href="https://coveralls.io/github/nogoo9/mcp-server-cloud-fs?branch=main"><img src="https://coveralls.io/repos/github/nogoo9/mcp-server-cloud-fs/badge.svg?branch=main" alt="Coverage"></a>
+  <a href="https://semgrep.dev"><img src="https://img.shields.io/badge/SAST-Semgrep-4B11A8?logo=semgrep&logoColor=white" alt="Semgrep"></a>
+  <br/>
+  <a href="https://www.npmjs.com/package/@nogoo9/mcp-server-cloud-fs"><img src="https://img.shields.io/npm/v/@nogoo9/mcp-server-cloud-fs" alt="npm"></a>
+  <img src="https://img.shields.io/npm/dm/%40nogoo9%2Fmcp-server-cloud-fs" alt="NPM Downloads">
+  <a href="https://skills.sh/nogoo9/mcp-server-cloud-fs"><img src="https://skills.sh/b/nogoo9/mcp-server-cloud-fs" alt="skills.sh"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue" alt="License"></a>
+</p>
 
-> **📖 [Read the full documentation →](https://nogoo9.github.io/mcp-server-cloud-fs/latest/)**
+<p align="center">
+  Cloud replacement for <code>mcp-server-filesystem</code> — 20+ tools for S3, Azure Blob, and GCS.<br/>
+  Deploy locally via STDIO or remotely over HTTP/WebSocket with OAuth 2.1 auth.<br/>
+  Also available as an npm library and interactive TUI.
+</p>
 
+<p align="center">
+  <strong>📖 <a href="https://nogoo9.github.io/mcp-server-cloud-fs/latest/">Read the full documentation →</a></strong>
+</p>
 
-Cloud replacement for `mcp-server-filesystem` — 20+ tools for S3, Azure Blob, and GCS. Deploy locally via STDIO or remotely over HTTP/WebSocket with OAuth 2.1 authentication. Also available as an npm library.
+<p align="center">
+  <img src="docs/public/images/cloud-fs-claude-demo.svg" alt="cloud-fs in Claude Code" width="700" />
+</p>
 
-![Amazon S3](https://img.shields.io/badge/Amazon_S3-569A31?logo=amazons3&logoColor=white)
-![Azure Blob Storage](https://img.shields.io/badge/Azure_Blob_Storage-0078D4?logo=microsoftazure&logoColor=white)
-![Google Cloud Storage](https://img.shields.io/badge/Google_Cloud_Storage-4285F4?logo=googlecloud&logoColor=white)
-![MinIO](https://img.shields.io/badge/MinIO-C72E49?logo=minio&logoColor=white)
-![RustFS](https://img.shields.io/badge/RustFS-DEA584?logo=rust&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
-![In-Memory](https://img.shields.io/badge/In--Memory-6C63FF?logoColor=white)
+<p align="center">
+  <img src="docs/public/images/cloud-fs-cli-demo.svg" alt="cloud-fs interactive shell" width="700" />
+</p>
+
+**Providers:** Amazon S3 · Azure Blob Storage · Google Cloud Storage · MinIO · RustFS · Cloudflare R2 · Backblaze B2 · Wasabi · LocalStack · SQLite · In-Memory
 
 ---
 
@@ -29,6 +42,7 @@ Cloud replacement for `mcp-server-filesystem` — 20+ tools for S3, Azure Blob, 
 
 - [What it does](#what-it-does)
 - [Quick start](#quick-start)
+- [Interactive Shell](#interactive-shell-cloud-fs)
 - [Transports](#transports)
 - [Authentication & Authorization](#authentication--authorization)
 - [Production Features](#production-features)
@@ -41,6 +55,7 @@ Cloud replacement for `mcp-server-filesystem` — 20+ tools for S3, Azure Blob, 
 - [Programmatic Usage](#programmatic-usage-npm-library)
 - [MCP Inspector](#mcp-inspector)
 - [Development & Testing](#development--testing)
+- [AI Agent Skill](#ai-agent-skill)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -52,15 +67,17 @@ Cloud replacement for `mcp-server-filesystem` — 20+ tools for S3, Azure Blob, 
 
 It also includes **5 extended tools** inspired by [claude-code's filesystem tool surface](https://github.com/codeaashu/claude-code/tree/main/src/tools): line-range reads, in-process regex search (single file and multi-file), server-side copy, and opt-in deletion.
 
-A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, a **shell tool** lets you run POSIX-like commands (`ls`, `grep`, `cat | wc`, etc.) against cloud storage, and the package is available as a **programmatic npm library**.
+A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, a **shell tool** lets you run POSIX-like commands (`ls`, `grep`, `jq`, `cat | wc`, etc.) against cloud storage, and the package is available as a **programmatic npm library**.
 
-### v0.4.0 Highlights
+### v0.5.0 Highlights
 
+- **Interactive TUI (`cloud-fs`)**: Terminal shell with `cd`, tab completion, and command history
 - **Multi-transport**: STDIO (default), Streamable HTTP, and WebSocket
-- **Dual runtime**: Bun-native and Node.js support for HTTP transport
+- **Dual runtime**: Bun-native and Node.js support (HTTP transport + SQLite provider)
 - **OAuth 2.1**: Built-in auth server or external IdP token validation
 - **ext-auth extensions**: Client Credentials (M2M) and Enterprise-Managed Authorization (SSO)
-- **Production hardening**: Rate limiting, CORS, health checks, structured logging
+- **Production hardening**: Rate limiting, CORS, security headers, health checks, structured logging
+- **AI agent skill**: Installable `skills/cloud-fs` for Claude Code, Gemini CLI, and other AI assistants
 
 ---
 
@@ -92,6 +109,42 @@ bunx @nogoo9/mcp-server-cloud-fs s3 s3://my-bucket --transport ws --port 3000
 
 ```bash
 bunx @nogoo9/mcp-server-cloud-fs memory mem://demo --enable-shell --seed-demo
+```
+
+---
+
+## Interactive Shell (`cloud-fs`)
+
+<p align="center">
+  <img src="docs/public/images/cloud-fs-cli-demo.svg" alt="cloud-fs interactive shell demo" width="700" />
+</p>
+
+Drop into an interactive terminal for exploring and managing cloud storage — no MCP client needed:
+
+```bash
+# S3
+npx -p @nogoo9/mcp-server-cloud-fs cloud-fs s3 s3://my-bucket
+
+# In-memory demo with sample files
+npx -p @nogoo9/mcp-server-cloud-fs cloud-fs memory mem://demo --seed-demo
+
+# With a config file (cloud-fs.json in CWD)
+npx -p @nogoo9/mcp-server-cloud-fs cloud-fs
+```
+
+### Features
+
+- **`cd` navigation** — `cd data`, `cd ..`, `cd /` with dynamic prompt showing current directory
+- **Tab completion** — context-aware path and command completion
+- **Command history** — persistent across sessions (`~/.cloud-fs_history`)
+- **Relative paths** — all commands resolve relative to `cwd`, just like a real shell
+- **19 built-in commands** — `ls`, `cat`, `head`, `tail`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `stat`, `find`, `grep`, `wc`, `du`, `echo`, `tee`, `diff`, `jq`, `cd`
+- **Pipes & redirects** — `cat config.json | jq '.database'`, `echo hello > file.txt`
+
+### Local development
+
+```bash
+bun src/cli-tui.ts memory mem://demo --seed-demo
 ```
 
 ---
@@ -138,6 +191,7 @@ cloud-fs-mcp s3 s3://my-bucket \
   --auth external --auth-jwks-uri https://login.example.com/.well-known/jwks.json \
   --cors-origin https://app.example.com \
   --rate-limit 60 --rate-limit-burst 10 \
+  --security-headers \
   --request-logging
 ```
 
@@ -309,6 +363,36 @@ Enable with `--request-logging`.
 
 Automatically applied when binding to localhost addresses. Validates the `Host` header against allowed hostnames to prevent DNS rebinding attacks.
 
+### Security Headers
+
+Opt-in HTTP response hardening via [nosecone](https://github.com/arcjet/arcjet-js/tree/main/nosecone) — a framework-agnostic security headers library. Works with both Bun-native and Node/Express transports.
+
+When enabled, every HTTP response includes standard security headers:
+
+- `Content-Security-Policy`
+- `Strict-Transport-Security`
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options`
+- `Cross-Origin-Opener-Policy`
+- `Cross-Origin-Resource-Policy`
+- `Referrer-Policy`
+- And more (see [nosecone defaults](https://docs.arcjet.com/nosecone/quick-start))
+
+```bash
+# Enable with defaults
+cloud-fs-mcp s3 s3://my-bucket --transport http --security-headers
+
+# Custom configuration via inline JSON
+cloud-fs-mcp s3 s3://my-bucket --transport http \
+  --security-headers-config '{"contentSecurityPolicy":false}'
+
+# Custom configuration via file
+cloud-fs-mcp s3 s3://my-bucket --transport http \
+  --security-headers-config-file ./nosecone.json
+```
+
+> **Note:** Requires the `nosecone` peer dependency: `npm install nosecone`
+
 ---
 
 ## CLI Reference
@@ -321,7 +405,7 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 
 | Provider | URI format | Description |
 |---|---|---|
-| `s3` | `s3://bucket[/prefix]` | AWS S3 or S3-compatible (MinIO, RustFS) |
+| `s3` | `s3://bucket[/prefix]` | AWS S3, and any S3-compatible endpoint (MinIO, RustFS, Cloudflare R2, Backblaze B2, Wasabi, LocalStack, …) |
 | `azure` | `az://container[/prefix]` | Azure Blob Storage |
 | `gcs` | `gs://bucket[/prefix]` | Google Cloud Storage |
 | `memory` | `mem://name` | In-memory (ephemeral, for demos) |
@@ -356,6 +440,9 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--rate-limit <req/min>` | `0` (off) | Rate limit per client |
 | `--rate-limit-burst <n>` | `10` | Burst allowance |
 | `--request-logging` | `false` | Enable structured JSON request logging |
+| `--security-headers` | `false` | Enable security headers via nosecone |
+| `--security-headers-config <json>` | — | Inline JSON config for nosecone |
+| `--security-headers-config-file <path>` | — | Load nosecone config from a JSON file |
 
 #### Storage & Cache
 
@@ -370,6 +457,7 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--no-cache` | — | Bypass cache entirely (pass-through mode) |
 | `--gcs-endpoint <url>` | — | Custom endpoint for GCS |
 | `--sqlite-db <path>` | — | SQLite database file path |
+| `--ca-file <path>` | — | PEM CA bundle for TLS (S3-compatible + Redis) |
 
 #### Tools
 
@@ -394,15 +482,47 @@ Credentials are read from the standard AWS credential chain: `AWS_ACCESS_KEY_ID`
 cloud-fs-mcp s3 s3://my-bucket --region us-east-1
 ```
 
-### S3-compatible (MinIO, RustFS)
+### S3-compatible storage
 
-Pass `--endpoint` to target any S3-compatible backend:
+Any S3-compatible backend works via `--endpoint`. All use the standard AWS credential chain (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`).
+
+| Provider | `--endpoint` value | Notes |
+|---|---|---|
+| **MinIO** | `http://minio:9000` | Self-hosted; use `--ca-file` for TLS with a private CA |
+| **RustFS** | `http://rustfs:9000` | Rust-native S3-compatible store |
+| **LocalStack** | `http://localhost:4566` | Full AWS emulator for local dev and CI |
+| **Cloudflare R2** | `https://<account-id>.r2.cloudflarestorage.com` | No egress fees; use an R2 API token as the secret key |
+| **Backblaze B2** | `https://s3.<region>.backblazeb2.com` | Use B2 application key ID / key |
+| **Wasabi** | `https://s3.<region>.wasabisys.com` | Compatible, no egress fees |
+| **DigitalOcean Spaces** | `https://<region>.digitaloceanspaces.com` | Use a Spaces access key |
+| **Scaleway** | `https://s3.<region>.scw.cloud` | Use a Scaleway access key |
+| **Ceph RGW** | `http://<rgw-host>:<port>` | Enterprise self-hosted; supports all S3 APIs |
+| **SeaweedFS** | `http://<master>:8333` | High-throughput distributed FS with S3 API |
+| **Garage** | `http://<node>:3900` | Lightweight distributed S3 for homelabs |
 
 ```bash
+# MinIO
 export AWS_ACCESS_KEY_ID=minioadmin
 export AWS_SECRET_ACCESS_KEY=minioadmin
-cloud-fs-mcp s3 s3://my-bucket --endpoint http://minio:9000 --region us-east-1
+cloud-fs-mcp s3 s3://my-bucket --endpoint http://minio:9000
+
+# Cloudflare R2
+export AWS_ACCESS_KEY_ID=<r2-access-key-id>
+export AWS_SECRET_ACCESS_KEY=<r2-secret-access-key>
+cloud-fs-mcp s3 s3://my-bucket --endpoint https://<account-id>.r2.cloudflarestorage.com --region auto
+
+# Backblaze B2
+export AWS_ACCESS_KEY_ID=<b2-key-id>
+export AWS_SECRET_ACCESS_KEY=<b2-application-key>
+cloud-fs-mcp s3 s3://my-bucket --endpoint https://s3.us-west-004.backblazeb2.com --region us-west-004
+
+# LocalStack
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+cloud-fs-mcp s3 s3://my-bucket --endpoint http://localhost:4566 --region us-east-1
 ```
+
+> **TLS with private CA:** For MinIO, RustFS, or Ceph with a self-signed certificate, add `--ca-file /path/to/ca.pem`.
 
 ### Azure Blob Storage
 
@@ -430,7 +550,7 @@ cloud-fs-mcp memory mem://demo --enable-shell
 
 ### SQLite (persistent local)
 
-Persistent local storage using Bun's built-in `bun:sqlite`. Uses WAL mode.
+Persistent local storage using WAL mode. Dual-runtime: uses `bun:sqlite` on Bun, `better-sqlite3` on Node.js (install as peer dep: `npm install better-sqlite3`).
 
 ```bash
 cloud-fs-mcp sqlite sqlite://my-bucket --sqlite-db /tmp/cloud-fs.db --enable-shell
@@ -547,12 +667,51 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 |---|---|---|
 | `shell` ⚡ | `command` | Execute POSIX-like commands. Supports pipes, redirects. **Requires `--enable-shell`.** |
 
-**Built-in commands:** `ls`, `cat`, `head`, `tail`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `stat`, `find`, `grep`, `wc`, `du`, `echo`, `tee`, `diff`
+**Built-in commands:** `ls`, `cat`, `head`, `tail`, `cp`, `mv`, `rm`, `mkdir`, `touch`, `stat`, `find`, `grep`, `wc`, `du`, `echo`, `tee`, `diff`, `jq`, `cd`
+
+#### Relative paths
+
+All shell commands (and all other tools) support **relative paths** — you don't need to type the full URI every time. Paths without a scheme prefix (`s3://`, `mem://`, etc.) are resolved relative to the first configured root:
 
 ```bash
-shell "ls -l s3://my-bucket/data/"
-shell "cat s3://my-bucket/config.json | grep port | wc -l"
-shell "echo hello world > s3://my-bucket/greeting.txt"
+# With root s3://my-bucket/data, these are equivalent:
+shell "cat config.json"
+shell "cat s3://my-bucket/data/config.json"
+
+# Subdirectories work naturally:
+shell "ls logs/"
+shell "cat logs/app.log | grep ERROR"
+
+# ls with no args lists the root's contents:
+shell "ls"
+
+# find with no args searches from the root:
+shell "find -name '*.json'"
+```
+
+Standard `.` and `..` are normalized, with `..` traversal blocked at the root boundary for security.
+
+#### Examples
+
+```bash
+# List root contents
+shell "ls -l"
+
+# JSON query with jq
+shell "cat config.json | jq '.database.port'"
+
+# Search and count
+shell "grep -i error server.log | wc -l"
+
+# Write files
+shell "echo hello world > greeting.txt"
+
+# Copy and diff
+shell "cp config.json config.backup.json"
+shell "diff config.json config.backup.json"
+
+# Full URIs still work for cross-root access
+shell "cat s3://other-bucket/file.txt"
 ```
 
 > ⚡ Requires `--enable-shell`. `rm` and `mv` additionally require `--enable-delete`.
@@ -599,9 +758,33 @@ VFS metadata is persisted to the CacheStore under `__vfs__/*` keys. On startup, 
 |---|---|---|
 | **Memory** (default) | `--cache-store memory` | In-process, fast, not shared, not persistent. |
 | **Filesystem** | `--cache-store fs --cache-dir <path>` | Survives restarts. |
-| **Redis** | `--cache-store redis` | Shared, persistent. Requires `ioredis` peer dep. `REDIS_URL` env var. |
+| **Redis** | `--cache-store redis` | Shared, persistent. Requires `ioredis` peer dep. `REDIS_URL` env var. Use `rediss://` for TLS. |
 
 **Writes** land in cache immediately (marked dirty), flushed after debounce window (default: 2s). **Graceful shutdown** flushes all dirty entries before exit. **Pass-through mode** (`--no-cache`) sends every operation directly to the provider.
+
+> **⚠️ Redis TLS:** The server warns at startup when `REDIS_URL` uses unencrypted `redis://`. Use `rediss://` for TLS-encrypted connections in production.
+
+### Custom CA Certificates
+
+Use `--ca-file <path>` to supply a PEM CA bundle for S3-compatible endpoints (MinIO, RustFS) and Redis running with a private CA:
+
+```bash
+# S3-compatible with self-signed CA
+cloud-fs-mcp s3 s3://my-bucket \
+  --endpoint https://minio.internal:9000 \
+  --ca-file /etc/ssl/certs/my-ca.pem
+
+# Redis with private CA
+REDIS_URL=rediss://redis.internal:6380 \
+cloud-fs-mcp s3 s3://my-bucket --cache-store redis \
+  --ca-file /etc/ssl/certs/my-ca.pem
+```
+
+For runtime-wide CA trust (all providers + Redis), use the standard `NODE_EXTRA_CA_CERTS` env var instead:
+
+```bash
+NODE_EXTRA_CA_CERTS=/etc/ssl/certs/my-ca.pem cloud-fs-mcp s3 s3://my-bucket
+```
 
 ---
 
@@ -660,6 +843,8 @@ Catppuccin Mocha theme, command history, auto-resize. Renders inside compatible 
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for full setup instructions.
 
+**AI agent skills** are installed separately after cloning via `bun x skills add semgrep/skills` — see [CONTRIBUTING.md](CONTRIBUTING.md#ai-agent-skills) for details.
+
 ### Test tiers
 
 | Tier | Command | Infra? |
@@ -678,6 +863,39 @@ The CI workflow runs on every push/PR:
 2. **e2e** job: full E2E with Docker Compose (MinIO, Redis)
 
 HTTP E2E tests use the in-memory provider and need zero infrastructure, making them fast and reliable for every CI run.
+
+---
+
+## AI Agent Skill
+
+<p align="center">
+  <img src="docs/public/images/cloud-fs-claude-demo.svg" alt="cloud-fs skill in action" width="700" />
+</p>
+
+The `skills/cloud-fs` directory contains an installable AI agent skill that teaches coding assistants (Claude Code, Gemini CLI, etc.) how to use cloud-fs as a POSIX-like virtual filesystem. Install it to give your assistant fluency with cloud storage commands.
+
+### What it provides
+
+- **MCP mode auto-detection** — recognizes `mcp__cloud-fs__*` tools and maps user intents to the right tool calls
+- **Bootstrap flow** — walks the user through first-time setup when the MCP server isn't configured yet
+- **POSIX-to-MCP mapping** — translates shell commands (`ls`, `cat`, `grep`, `find`, `cp`, etc.) into the correct MCP tool calls
+- **Provider credential reference** — AWS, Azure, GCS, MinIO/RustFS, SQLite setup guidance
+- **`.mcp.json` persistence** — offers to save provider configuration so future sessions are pre-wired
+
+### Installation
+
+```bash
+# Claude Code
+claude mcp add-skill nogoo9/mcp-server-cloud-fs
+
+# skills.sh
+npx skills add nogoo9/mcp-server-cloud-fs
+
+# or with bun instead
+bun x skills add nogoo9/mcp-server-cloud-fs
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md#ai-agent-skills) for details on the skill system.
 
 ---
 
@@ -703,3 +921,7 @@ bun run docs:preview  # preview production build
 ## License
 
 [PolyForm Shield 1.0.0](LICENSE). Free for any non-competitive use.
+
+---
+
+Built with [![Claude](https://img.shields.io/badge/Claude-d97706?logo=anthropic&logoColor=white)](https://claude.ai) [![Gemini](https://img.shields.io/badge/Gemini-8E75FF?logo=googlegemini&logoColor=white)](https://gemini.google.com) [![Antigravity](https://img.shields.io/badge/Antigravity-4285F4?logo=google&logoColor=white)](https://antigravity.google/)

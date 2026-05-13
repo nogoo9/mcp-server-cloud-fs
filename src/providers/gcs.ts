@@ -8,6 +8,16 @@ import type {
 	StorageProvider,
 } from "./interface.js";
 
+/**
+ * Google Cloud Storage provider using the official GCS SDK.
+ *
+ * URI format: `gs://bucket-name/optional-prefix`
+ *
+ * Supports project-scoped access, custom API endpoints (for emulators),
+ * and configurable save options.
+ *
+ * @category Providers
+ */
 export class GcsProvider implements StorageProvider {
 	private readonly storage: Storage;
 	/** Default options merged into every `.save()` call. */

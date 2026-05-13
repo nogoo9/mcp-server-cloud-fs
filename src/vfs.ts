@@ -16,6 +16,11 @@ import type {
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
+/**
+ * Metadata for a single VFS object (analogous to POSIX `stat`).
+ *
+ * @category Core
+ */
 export interface VfsStat {
 	size: number;
 	lastModified: Date;
@@ -86,6 +91,23 @@ function deserializeDirIndex(
 
 // ── VirtualFS ──────────────────────────────────────────────────────────────
 
+/**
+ * FUSE-inspired write-back overlay filesystem.
+ *
+ * Provides a coherent filesystem view by overlaying an in-memory inode table,
+ * directory index, and tombstone set on top of the backing {@link StorageProvider}.
+ * All MCP tool handlers use this as their single access point.
+ *
+ * @example
+ * ```ts
+ * const vfs = new VirtualFS(provider, cacheStore);
+ * await vfs.hydrate();
+ * await vfs.put(root, "hello.txt", Buffer.from("world"));
+ * const content = await vfs.get(root, "hello.txt");
+ * ```
+ *
+ * @category Core
+ */
 export class VirtualFS {
 	/** Inode overlay: cacheKey → stat for every object written through this VFS. */
 	private inodes = new Map<string, VfsStat>();

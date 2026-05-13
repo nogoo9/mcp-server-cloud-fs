@@ -4,6 +4,52 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0] — 2026-05-14
+
+### Added
+
+- **Interactive TUI (`cloud-fs`)** — new binary for terminal-based cloud storage exploration. Powered by `node:readline` with tab completion, persistent history (`~/.cloud-fs_history`), ANSI-colored UI, and a command queue for correct async sequencing. Runs on both Bun and Node.js.
+- **`cd` command** — navigate directories within the virtual filesystem. Supports `cd <dir>`, `cd ..`, `cd /`, with prompt reflecting the current working directory. All 19 shell commands resolve paths relative to `cwd`.
+- **`jq` command** — native, zero-dependency JSON processor for the shell. Supports key extraction, array indexing, nested paths, and piping from `cat`.
+- **Relative path support** — all tools and shell commands resolve paths relative to the primary root prefix. `ls`, `find`, and other commands output relative paths by default for shell composability.
+- **Config file support** — `cloud-fs.json` in CWD or `~/.config/cloud-fs/config.json` for persistent TUI configuration. CLI flags override config values.
+- **`--seed-demo` flag** — pre-populate storage with sample files (README, config, CSV, logs) for immediate exploration.
+- **`--ca-file <path>`** — PEM CA bundle for TLS verification of S3-compatible endpoints (MinIO, RustFS) and Redis (`rediss://`) using a private/self-signed CA. Injected directly into `ioredis` (`tls.ca`) and the S3 client (`NodeHttpHandler` + `https.Agent`). For runtime-wide CA trust (Azure, GCS, or all providers), use `NODE_EXTRA_CA_CERTS` instead.
+- **AI agent skill (`skills/cloud-fs`)** — installable skill that teaches AI coding assistants (Claude Code, Gemini CLI, etc.) how to use cloud-fs as a POSIX-like virtual filesystem. Supports local installation via `skills add ./skills/cloud-fs` and remote installation via `npx skills add nogoo9/mcp-server-cloud-fs`. Includes MCP mode auto-detection, bootstrap flow, and POSIX-to-MCP tool mapping.
+
+### Changed
+
+- **SQLite provider: dual-runtime support** — uses `bun:sqlite` on Bun and `better-sqlite3` on Node.js. Constructor replaced with async factory `SqliteProvider.create()` (**breaking** for direct consumers of `SqliteProvider`).
+- **Bootstrap refactor** — extracted `src/bootstrap.ts` to share VFS/provider/cache initialization between the MCP server and the TUI binary.
+- **Shell path resolution** — introduced `resolveShellPath()` in `src/tools/shell/resolve.ts` to prepend `cwd` to relative paths, keeping `resolveToolPath` unchanged for non-shell tools.
+- **`isAbsoluteUri` regex** — fixed `[a-z]+` → `[a-z][a-z0-9]*` to correctly handle schemes like `s3://`.
+- **WebSocket transport** — replaced `any`-typed `bunServerRef` with a structural type for type safety.
+
+### Security
+
+- **Dependency audit** — resolved 12 of 13 `bun audit` vulnerabilities:
+  - `hono` 4.12.15 → 4.12.18 (4 moderate + 1 low)
+  - `fast-uri` 3.1.0 → 3.1.2 (2 high)
+  - `fast-xml-builder` 1.1.5 → 1.2.0 (1 high + 1 moderate)
+  - `ip-address` 10.1.0 → 10.2.0 (1 moderate)
+  - `vitepress` 1.6.4 → 2.0.0-alpha.17, pulling `vite` 5 → 7 (path traversal in `.map` handling) and `esbuild` 0.21 → 0.27 (dev server CORS bypass)
+  - Remaining 1 unfixable (low): `@tootallnate/once` — deeply nested in GCS/Azure SDK transitive deps
+- **File inclusion fix** — sanitized file path handling in `scripts/docs-landing.ts` to prevent potential file inclusion attack; added 254-line test suite
+- **Pinned GitHub Actions** — all 3rd-party actions in CI, docs, and publish workflows pinned to full commit SHA to prevent supply-chain attacks
+- **Redis TLS warning** — runtime `console.warn` when `REDIS_URL` uses unencrypted `redis://` transport; recommends `rediss://` for production TLS connections
+- **SAST remediation** — resolved all Semgrep findings (`p/security-audit`, `p/javascript`, `p/trailofbits`, `p/owasp-top-ten`, `p/cwe-top-25`):
+  - Extracted `DEFAULT_REDIS_URL` constant to centralize the Redis fallback and eliminate pattern-match false positives
+  - Added `nosemgrep` suppressions for intentional `redis://` string references in warning messages and E2E test fixtures
+  - Replaced `Math.random()` with `crypto.randomInt()` / `crypto.randomBytes()` in test files for secure randomness
+- **Security headers** — opt-in HTTP response hardening via [nosecone](https://github.com/arcjet/arcjet-js/tree/main/nosecone) (framework-agnostic, works with both Bun-native and Node/Express transports):
+  - Sets `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, and other standard security headers
+  - `--security-headers` flag enables nosecone with defaults
+  - `--security-headers-config <json>` for inline JSON customization
+  - `--security-headers-config-file <path>` to load configuration from a file
+  - Headers are resolved once at startup and applied to every response (health checks, MCP, CORS preflight)
+  - `nosecone` is an optional peer dependency — only required when the flag is used
+
+
 ## [0.4.0] — 2026-05-12
 
 ### Added

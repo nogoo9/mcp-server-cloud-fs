@@ -1,6 +1,6 @@
 // src/tools/shell/commands/diff.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -13,8 +13,16 @@ export const diff: ShellCommandHandler = async (args, ctx, _stdin) => {
 		throw new Error("diff: missing file operand");
 	}
 
-	const { root: root1, key: key1 } = resolveToolPath(ctx.roots, args[0]!);
-	const { root: root2, key: key2 } = resolveToolPath(ctx.roots, args[1]!);
+	const { root: root1, key: key1 } = resolveShellPath(
+		ctx.roots,
+		args[0]!,
+		ctx.cwd,
+	);
+	const { root: root2, key: key2 } = resolveShellPath(
+		ctx.roots,
+		args[1]!,
+		ctx.cwd,
+	);
 
 	const [buf1, buf2] = await Promise.all([
 		ctx.vfs.get(root1, key1),

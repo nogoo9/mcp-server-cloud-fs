@@ -1,6 +1,6 @@
 // src/tools/shell/commands/cat.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -17,7 +17,7 @@ export const cat: ShellCommandHandler = async (args, ctx, stdin) => {
 
 	const parts: string[] = [];
 	for (const path of args) {
-		const { root, key } = resolveToolPath(ctx.roots, path);
+		const { root, key } = resolveShellPath(ctx.roots, path, ctx.cwd);
 		const buffer = await ctx.vfs.get(root, key);
 		parts.push(buffer.toString("utf8"));
 	}

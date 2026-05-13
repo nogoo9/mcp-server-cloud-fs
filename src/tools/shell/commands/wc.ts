@@ -1,6 +1,6 @@
 // src/tools/shell/commands/wc.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -38,7 +38,7 @@ export const wc: ShellCommandHandler = async (args, ctx, stdin) => {
 	let text: string;
 	let label = "";
 	if (paths.length > 0) {
-		const { root, key } = resolveToolPath(ctx.roots, paths[0]!);
+		const { root, key } = resolveShellPath(ctx.roots, paths[0]!, ctx.cwd);
 		const buffer = await ctx.vfs.get(root, key);
 		text = buffer.toString("utf8");
 		label = ` ${paths[0]}`;

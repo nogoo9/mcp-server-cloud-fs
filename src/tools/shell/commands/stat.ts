@@ -1,6 +1,6 @@
 // src/tools/shell/commands/stat.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -18,7 +18,7 @@ export const stat: ShellCommandHandler = async (args, ctx, _stdin) => {
 
 	for (const path of args) {
 		if (path.startsWith("-")) continue;
-		const { root, key } = resolveToolPath(ctx.roots, path);
+		const { root, key } = resolveShellPath(ctx.roots, path, ctx.cwd);
 		const info = await ctx.vfs.stat(root, key);
 		const uri = `${root.scheme}://${root.bucket}/${key}`;
 

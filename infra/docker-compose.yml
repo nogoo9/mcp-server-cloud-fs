@@ -97,7 +97,40 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── RustFS (S3-compatible, Rust-native) ────────────────────────────────────
+  rustfs:
+    image: rustfs/rustfs:latest
+    command: server /data --console-address ":9003"
+    ports:
+      - "9002:9000"
+      - "9003:9003"
+    environment:
+      RUSTFS_ROOT_USER: rustfsadmin
+      RUSTFS_ROOT_PASSWORD: rustfsadmin
+    volumes:
+      - rustfs-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -so /dev/null http://localhost:9000/ || [ $? -eq 22 ]"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  rustfs-init:
+    image: minio/mc:latest
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command: >
+      -c "
+        mc alias set rustfs http://rustfs:9000 rustfsadmin rustfsadmin &&
+        mc mb rustfs/test-bucket --ignore-existing &&
+        echo 'RustFS bucket ready'
+      "
+
 volumes:
   minio-data:
   azurite-data:
   gcs-data:
+  rustfs-data:

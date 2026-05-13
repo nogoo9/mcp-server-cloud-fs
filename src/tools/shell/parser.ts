@@ -1,6 +1,7 @@
 // src/tools/shell/parser.ts
 // Tokenizer and pipeline parser for shell commands.
-// Handles quoting, pipes (|), and redirection (>, >>, <).
+// Handles quoting, pipes (|), redirections (>, >>, <),
+// and command list operators (&&, ||, ;).
 
 /** A single stage in a shell pipeline. */
 export interface PipelineStage {
@@ -25,6 +26,19 @@ export interface ParsedPipeline {
 	/** Output redirection (> file or >> file) applies to the last stage. */
 	outputRedirect: Redirect | null;
 }
+
+/** Operator that joins two adjacent pipelines in a command list. */
+export type Operator = "&&" | "||" | ";";
+
+/** A pipeline paired with the operator that follows it (null = last entry). */
+export interface CommandListEntry {
+	pipeline: ParsedPipeline;
+	/** The operator *after* this entry; null means this is the final entry. */
+	operator: Operator | null;
+}
+
+/** An ordered list of pipelines connected by &&, ||, or ;. */
+export type CommandList = CommandListEntry[];
 
 /**
  * Tokenize a shell command string.
@@ -151,6 +165,7 @@ export function parsePipeline(tokens: string[]): ParsedPipeline {
 
 /**
  * Parse a raw command string into a structured pipeline.
+ * @deprecated Use {@link parseCommandList} for multi-command support.
  */
 export function parseCommand(command: string): ParsedPipeline {
 	const tokens = tokenize(command.trim());
@@ -158,4 +173,52 @@ export function parseCommand(command: string): ParsedPipeline {
 		throw new Error("shell: empty command");
 	}
 	return parsePipeline(tokens);
+}
+
+/** Tokens that act as command-list separators (standalone only). */
+const LIST_OPERATORS = new Set(["&&", "||", ";"]);
+
+/**
+ * Parse a raw command string that may contain &&, ||, or ; operators into a
+ * {@link CommandList}. Each entry holds one pipeline and the operator that
+ * follows it (null for the last entry).
+ *
+ * Quoting is fully respected: `echo "a&&b"` produces a single-entry list.
+ *
+ * @example
+ * parseCommandList("echo a && echo b");
+ * // → [{ pipeline: …echo a…, operator: "&&" }, { pipeline: …echo b…, operator: null }]
+ */
+export function parseCommandList(command: string): CommandList {
+	const tokens = tokenize(command.trim());
+	if (tokens.length === 0) {
+		throw new Error("shell: empty command");
+	}
+
+	const list: CommandList = [];
+	let segment: string[] = [];
+
+	for (const tok of tokens) {
+		if (LIST_OPERATORS.has(tok)) {
+			if (segment.length === 0) {
+				throw new Error(`shell: syntax error — empty command before '${tok}'`);
+			}
+			list.push({
+				pipeline: parsePipeline(segment),
+				operator: tok as Operator,
+			});
+			segment = [];
+		} else {
+			segment.push(tok);
+		}
+	}
+
+	// Last segment (no trailing operator)
+	if (segment.length === 0) {
+		const lastOp = list[list.length - 1]?.operator;
+		throw new Error(`shell: syntax error — empty command after '${lastOp}'`);
+	}
+	list.push({ pipeline: parsePipeline(segment), operator: null });
+
+	return list;
 }

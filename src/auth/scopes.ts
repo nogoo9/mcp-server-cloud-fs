@@ -1,7 +1,7 @@
 // src/auth/scopes.ts
 // OAuth scope definitions and tool-to-scope mapping.
 
-/** All recognized cloud-fs OAuth scopes. */
+/** All recognized cloud-fs OAuth scopes. @category Auth */
 export const SCOPES = {
 	READ: "cloud-fs:read",
 	WRITE: "cloud-fs:write",
@@ -11,9 +11,10 @@ export const SCOPES = {
 	ADMIN: "cloud-fs:admin",
 } as const;
 
+/** A single OAuth scope value. @category Auth */
 export type Scope = (typeof SCOPES)[keyof typeof SCOPES];
 
-/** All valid scope values. */
+/** All valid scope values. @category Auth */
 export const ALL_SCOPES: readonly Scope[] = Object.values(SCOPES);
 
 /** Map tool names to the scope required to invoke them. */
@@ -50,7 +51,9 @@ const TOOL_SCOPE_MAP: Record<string, Scope> = {
 
 /**
  * Get the scope required for a given tool name.
- * Returns undefined if the tool is not recognized (should not happen in practice).
+ * Returns undefined if the tool is not recognized.
+ *
+ * @category Auth
  */
 export function getRequiredScope(toolName: string): Scope | undefined {
 	return TOOL_SCOPE_MAP[toolName];
@@ -59,6 +62,8 @@ export function getRequiredScope(toolName: string): Scope | undefined {
 /**
  * Check if a set of granted scopes authorizes access to a given tool.
  * The `cloud-fs:admin` scope grants access to all tools.
+ *
+ * @category Auth
  */
 export function hasScope(grantedScopes: string[], toolName: string): boolean {
 	// Admin scope overrides everything
@@ -72,6 +77,8 @@ export function hasScope(grantedScopes: string[], toolName: string): boolean {
 
 /**
  * Parse a space-separated scope string into an array.
+ *
+ * @category Auth
  */
 export function parseScopes(scopeString: string): string[] {
 	return scopeString

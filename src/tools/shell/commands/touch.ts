@@ -1,6 +1,6 @@
 // src/tools/shell/commands/touch.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -16,7 +16,7 @@ export const touch: ShellCommandHandler = async (args, ctx, _stdin) => {
 
 	for (const path of args) {
 		if (path.startsWith("-")) continue;
-		const { root, key } = resolveToolPath(ctx.roots, path);
+		const { root, key } = resolveShellPath(ctx.roots, path, ctx.cwd);
 
 		// Check if file already exists; if so, re-write it to update lastModified
 		try {
