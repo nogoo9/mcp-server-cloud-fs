@@ -606,6 +606,28 @@ VFS metadata is persisted to the CacheStore under `__vfs__/*` keys. On startup, 
 
 > **⚠️ Redis TLS:** The server warns at startup when `REDIS_URL` uses unencrypted `redis://`. Use `rediss://` for TLS-encrypted connections in production.
 
+### Custom CA Certificates
+
+Use `--ca-file <path>` to supply a PEM CA bundle for S3-compatible endpoints (MinIO, RustFS) and Redis running with a private CA:
+
+```bash
+# S3-compatible with self-signed CA
+cloud-fs-mcp s3 s3://my-bucket \
+  --endpoint https://minio.internal:9000 \
+  --ca-file /etc/ssl/certs/my-ca.pem
+
+# Redis with private CA
+REDIS_URL=rediss://redis.internal:6380 \
+cloud-fs-mcp s3 s3://my-bucket --cache-store redis \
+  --ca-file /etc/ssl/certs/my-ca.pem
+```
+
+For runtime-wide CA trust (all providers + Redis), use the standard `NODE_EXTRA_CA_CERTS` env var instead:
+
+```bash
+NODE_EXTRA_CA_CERTS=/etc/ssl/certs/my-ca.pem cloud-fs-mcp s3 s3://my-bucket
+```
+
 ---
 
 ## Programmatic Usage (npm library)

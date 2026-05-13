@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.4.1] — 2026-05-13
 
+### Added
+
+- **`--ca-file <path>`** — PEM CA bundle for TLS verification of S3-compatible endpoints (MinIO, RustFS) and Redis (`rediss://`) using a private/self-signed CA. Injected directly into `ioredis` (`tls.ca`) and the S3 client (`NodeHttpHandler` + `https.Agent`). For runtime-wide CA trust (Azure, GCS, or all providers), use `NODE_EXTRA_CA_CERTS` instead.
+
 ### Security
 
 - **Dependency audit** — resolved 12 of 13 `bun audit` vulnerabilities:

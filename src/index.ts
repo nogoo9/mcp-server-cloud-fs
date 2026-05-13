@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { readFileSync } from "node:fs";
 import { FilesystemStore } from "./cache/filesystem.js";
 import type { CacheStore } from "./cache/interface.js";
 import { MemoryStore } from "./cache/memory.js";
@@ -61,6 +62,7 @@ Storage & Cache:
   --no-cache                     Disable caching (pass-through mode)
   --gcs-endpoint <url>           Custom endpoint for GCS
   --sqlite-db <path>             SQLite database file path
+  --ca-file <path>               PEM CA bundle for S3-compatible endpoints and Redis TLS
 
 Tools:
   --enable-delete                Enable the delete_file tool (disabled by default)
@@ -70,6 +72,7 @@ Tools:
 
 Credentials are always sourced from SDK credential chains (env, ~/.aws, ADC, etc.).
 Redis URL via env: REDIS_URL (default: ${DEFAULT_REDIS_URL}, use rediss:// for TLS)
+Custom CA via env: NODE_EXTRA_CA_CERTS=<path> (or use --ca-file <path> for S3-compatible + Redis)
 `);
 	process.exit(1);
 }
@@ -104,6 +107,8 @@ interface CliArgs {
 	rateLimit: number;
 	rateLimitBurst: number;
 	requestLogging: boolean;
+	// v0.4.1 — TLS
+	caFile?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -128,6 +133,7 @@ function parseArgs(argv: string[]): CliArgs {
 	let enableShell = false;
 	let sqliteDb: string | undefined;
 	let seedDemo = false;
+	let caFile: string | undefined;
 
 	// v0.4.0 — transport & production flags
 	let transport: TransportType = "stdio";
@@ -233,6 +239,8 @@ function parseArgs(argv: string[]): CliArgs {
 			rateLimitBurst = Number(args[++i]);
 		} else if (arg === "--request-logging") {
 			requestLogging = true;
+		} else if (arg === "--ca-file") {
+			caFile = args[++i];
 		} else {
 			console.error(`Unknown argument: ${arg}`);
 			usage();
@@ -284,6 +292,8 @@ function parseArgs(argv: string[]): CliArgs {
 		rateLimit,
 		rateLimitBurst,
 		requestLogging,
+		// v0.4.1
+		...(caFile !== undefined && { caFile }),
 	};
 }
 
@@ -510,11 +520,29 @@ async function main(): Promise<void> {
 	const args = parseArgs(process.argv);
 	const roots = args.rootUris.map(parseUri);
 
+	// Read custom CA PEM once and pass to providers that support it.
+	let caPem: Buffer | undefined;
+	if (args.caFile) {
+		try {
+			caPem = readFileSync(args.caFile);
+		} catch {
+			console.error(`Error: cannot read --ca-file: ${args.caFile}`);
+			process.exit(1);
+		}
+		if (!caPem.toString().includes("-----BEGIN")) {
+			console.error(
+				`Error: --ca-file does not appear to be a valid PEM file: ${args.caFile}`,
+			);
+			process.exit(1);
+		}
+	}
+
 	let provider: StorageProvider;
 	if (args.providerName === "s3") {
 		provider = new S3Provider({
 			...(args.region !== undefined && { region: args.region }),
 			...(args.endpoint !== undefined && { endpoint: args.endpoint }),
+			...(caPem !== undefined && { caPem }),
 		});
 	} else if (args.providerName === "azure") {
 		const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING;
@@ -558,7 +586,7 @@ async function main(): Promise<void> {
 					"Set REDIS_URL=rediss://... for TLS in production.",
 			);
 		}
-		cache = await createRedisStore(provider, redisUrl, cacheOpts);
+		cache = await createRedisStore(provider, redisUrl, cacheOpts, caPem);
 	} else {
 		cache = new MemoryStore(provider, cacheOpts);
 	}

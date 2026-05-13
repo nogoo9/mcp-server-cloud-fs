@@ -55,6 +55,7 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--no-cache` | — | Bypass cache entirely (pass-through mode) |
 | `--gcs-endpoint <url>` | — | Custom endpoint for GCS |
 | `--sqlite-db <path>` | — | SQLite database file path |
+| `--ca-file <path>` | — | PEM CA bundle for TLS verification (S3-compatible endpoints + Redis) |
 
 ## Tools
 
@@ -65,6 +66,42 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--grep-max-objects <n>` | `1000` | Max objects `grep_files` scans per call |
 | `--seed-demo` | `false` | Seed VFS with sample files for demo |
 
+## TLS & Custom CA
+
+Two approaches are available for custom CA certificates:
+
+### `--ca-file <path>` (targeted)
+
+Injects the PEM CA bundle into specific clients:
+- **S3-compatible endpoints** (MinIO, RustFS) — passed as a custom `https.Agent` via `NodeHttpHandler`
+- **Redis** (`rediss://`) — passed as `tls.ca` to `ioredis`
+
+Not needed for AWS S3, Azure Blob, or GCS — these connect to public cloud endpoints with well-known CAs.
+
+```bash
+# MinIO with self-signed CA
+cloud-fs-mcp s3 s3://my-bucket \
+  --endpoint https://minio.internal:9000 \
+  --ca-file /etc/ssl/certs/my-ca.pem
+
+# Redis with private CA
+REDIS_URL=rediss://redis.internal:6380 \
+cloud-fs-mcp s3 s3://my-bucket --cache-store redis \
+  --ca-file /etc/ssl/certs/my-ca.pem
+```
+
+### `NODE_EXTRA_CA_CERTS` (runtime-wide)
+
+Node.js/Bun environment variable that applies to **all** outbound TLS connections — covers every provider and Redis:
+
+```bash
+NODE_EXTRA_CA_CERTS=/etc/ssl/certs/my-ca.pem \
+cloud-fs-mcp s3 s3://my-bucket --endpoint https://minio.internal:9000
+```
+
+Use `NODE_EXTRA_CA_CERTS` when you want a single CA to cover multiple connections, or when using Azure / GCS behind a TLS-intercepting proxy.
+
 ::: info
 Credentials are always sourced from SDK credential chains — never CLI flags. See [Provider Setup](/guide/providers) for details.
 :::
+

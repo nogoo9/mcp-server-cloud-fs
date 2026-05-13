@@ -1,4 +1,6 @@
 // src/providers/s3.ts
+
+import * as https from "node:https";
 import {
 	CopyObjectCommand,
 	DeleteObjectCommand,
@@ -10,6 +12,7 @@ import {
 	type PutObjectCommandInput,
 	S3Client,
 } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
@@ -29,6 +32,12 @@ export class S3Provider implements StorageProvider {
 	constructor(opts: {
 		region?: string;
 		endpoint?: string;
+		/**
+		 * Custom CA certificate (PEM) for TLS verification.
+		 * Required when connecting to S3-compatible endpoints (MinIO, RustFS)
+		 * that use a self-signed or private CA certificate.
+		 */
+		caPem?: Buffer;
 		/** Override defaults for every PutObject call (e.g. `{ ServerSideEncryption: 'AES256' }`). */
 		putOptions?: Omit<
 			PutObjectCommandInput,
@@ -40,6 +49,11 @@ export class S3Provider implements StorageProvider {
 			...(opts.endpoint && {
 				endpoint: opts.endpoint,
 				forcePathStyle: true,
+			}),
+			...(opts.caPem && {
+				requestHandler: new NodeHttpHandler({
+					httpsAgent: new https.Agent({ ca: opts.caPem }),
+				}),
 			}),
 		});
 		this.defaultPutOptions = opts.putOptions ?? {};
