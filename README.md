@@ -30,6 +30,10 @@
   <img src="docs/public/images/cloud-fs-demo.gif" alt="cloud-fs interactive shell demo" width="700" />
 </p>
 
+<p align="center">
+  <img src="docs/public/images/cloud-fs-claude-demo.svg" alt="cloud-fs AI agent skill demo" width="700" />
+</p>
+
 **Providers:** Amazon S3 · Azure Blob Storage · Google Cloud Storage · MinIO · RustFS · Cloudflare R2 · Backblaze B2 · Wasabi · LocalStack · SQLite · In-Memory
 
 ---
@@ -859,6 +863,10 @@ HTTP E2E tests use the in-memory provider and need zero infrastructure, making t
 ---
 
 ## AI Agent Skill
+
+<p align="center">
+  <img src="docs/public/images/cloud-fs-claude-demo.svg" alt="cloud-fs skill in action" width="700" />
+</p>
 
 The `skills/cloud-fs` directory contains an installable AI agent skill that teaches coding assistants (Claude Code, Gemini CLI, etc.) how to use cloud-fs as a POSIX-like virtual filesystem. Install it to give your assistant fluency with cloud storage commands.
 
