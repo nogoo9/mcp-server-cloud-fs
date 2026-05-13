@@ -129,10 +129,11 @@ export function createWsTransport(options: TransportOptions): ManagedTransport {
 				port: options.port,
 				hostname: options.host,
 
-				// biome-ignore lint/suspicious/noExplicitAny: Bun.serve fetch handler types
 				async fetch(
 					req: Request,
-					bunServerRef: any,
+					bunServerRef: {
+						upgrade(req: Request, opts: { data: WsData }): boolean;
+					},
 				): Promise<Response | undefined> {
 					const url = new URL(req.url);
 
