@@ -6,6 +6,7 @@
  */
 
 import { readdirSync, statSync, writeFileSync } from "node:fs";
+import * as path from "node:path";
 import { join } from "node:path";
 
 const deployDir = process.argv[2];
@@ -18,7 +19,15 @@ if (!deployDir) {
 const entries = readdirSync(deployDir);
 const versions = entries
 	.filter((e) => /^v\d+\.\d+\.\d+$/.test(e))
-	.filter((e) => statSync(join(deployDir, e)).isDirectory())
+	.filter((e) => {
+		const resolvedBase = path.resolve(deployDir);
+		const resolvedTarget = path.resolve(resolvedBase, e);
+		const relative = path.relative(resolvedBase, resolvedTarget);
+		if (relative.startsWith('..') || path.isAbsolute(relative)) {
+			return false;
+		}
+		return statSync(resolvedTarget).isDirectory();
+	})
 	.sort((a, b) => {
 		const pa = a
 			.slice(1)
