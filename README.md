@@ -874,10 +874,13 @@ The `skills/cloud-fs` directory contains an installable AI agent skill that teac
 
 ```bash
 # Claude Code
-claude mcp add-skill ./skills/cloud-fs
+claude mcp add-skill nogoo9/mcp-server-cloud-fs
 
-# Gemini CLI
-bun x skills add ./skills/cloud-fs
+# skills.sh
+npx skills add nogoo9/mcp-server-cloud-fs
+
+# or with bun instead
+bun x skills add nogoo9/mcp-server-cloud-fs
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md#ai-agent-skills) for details on the skill system.

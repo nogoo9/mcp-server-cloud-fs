@@ -15,7 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Config file support** — `cloud-fs.json` in CWD or `~/.config/cloud-fs/config.json` for persistent TUI configuration. CLI flags override config values.
 - **`--seed-demo` flag** — pre-populate storage with sample files (README, config, CSV, logs) for immediate exploration.
 - **`--ca-file <path>`** — PEM CA bundle for TLS verification of S3-compatible endpoints (MinIO, RustFS) and Redis (`rediss://`) using a private/self-signed CA. Injected directly into `ioredis` (`tls.ca`) and the S3 client (`NodeHttpHandler` + `https.Agent`). For runtime-wide CA trust (Azure, GCS, or all providers), use `NODE_EXTRA_CA_CERTS` instead.
-- **AI agent skill (`skills/cloud-fs`)** — installable skill that teaches AI coding assistants (Claude Code, Gemini CLI, etc.) how to use cloud-fs as a POSIX-like virtual filesystem. Includes MCP mode auto-detection, bootstrap flow for first-time setup, POSIX-to-MCP tool mapping, provider credential reference, and `.mcp.json` persistence guidance.
+- **AI agent skill (`skills/cloud-fs`)** — installable skill that teaches AI coding assistants (Claude Code, Gemini CLI, etc.) how to use cloud-fs as a POSIX-like virtual filesystem. Supports local installation via `skills add ./skills/cloud-fs` and remote installation via `npx skills add nogoo9/mcp-server-cloud-fs`. Includes MCP mode auto-detection, bootstrap flow, and POSIX-to-MCP tool mapping.
 
 ### Changed
 
