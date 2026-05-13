@@ -600,9 +600,11 @@ VFS metadata is persisted to the CacheStore under `__vfs__/*` keys. On startup, 
 |---|---|---|
 | **Memory** (default) | `--cache-store memory` | In-process, fast, not shared, not persistent. |
 | **Filesystem** | `--cache-store fs --cache-dir <path>` | Survives restarts. |
-| **Redis** | `--cache-store redis` | Shared, persistent. Requires `ioredis` peer dep. `REDIS_URL` env var. |
+| **Redis** | `--cache-store redis` | Shared, persistent. Requires `ioredis` peer dep. `REDIS_URL` env var. Use `rediss://` for TLS. |
 
 **Writes** land in cache immediately (marked dirty), flushed after debounce window (default: 2s). **Graceful shutdown** flushes all dirty entries before exit. **Pass-through mode** (`--no-cache`) sends every operation directly to the provider.
+
+> **⚠️ Redis TLS:** The server warns at startup when `REDIS_URL` uses unencrypted `redis://`. Use `rediss://` for TLS-encrypted connections in production.
 
 ---
 

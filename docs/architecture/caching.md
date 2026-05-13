@@ -8,7 +8,11 @@ The cache layer sits between the VFS and the storage provider, reducing latency 
 |---|---|---|
 | **Memory** (default) | `--cache-store memory` | In-process, fast, not shared, not persistent. |
 | **Filesystem** | `--cache-store fs --cache-dir <path>` | Survives restarts. |
-| **Redis** | `--cache-store redis` | Shared, persistent. Requires `ioredis` peer dep. `REDIS_URL` env var. |
+| **Redis** | `--cache-store redis` | Shared, persistent. Requires `ioredis` peer dep. `REDIS_URL` env var. Use `rediss://` for TLS. |
+
+::: warning Redis TLS
+When `REDIS_URL` uses the unencrypted `redis://` scheme, the server emits a warning at startup recommending `rediss://` for TLS in production. Local development with `redis://localhost:6379` is fine, but production deployments should always use TLS-encrypted connections.
+:::
 
 ## Write Path
 
@@ -33,8 +37,12 @@ cloud-fs-mcp s3 s3://my-bucket
 # Filesystem cache (survives restarts)
 cloud-fs-mcp s3 s3://my-bucket --cache-store fs --cache-dir /tmp/cloud-fs-cache
 
-# Redis cache (shared across instances)
+# Redis cache (local development)
 REDIS_URL=redis://localhost:6379 \
+cloud-fs-mcp s3 s3://my-bucket --cache-store redis
+
+# Redis cache (production — TLS encrypted)
+REDIS_URL=rediss://my-redis.example.com:6380 \
 cloud-fs-mcp s3 s3://my-bucket --cache-store redis
 
 # No cache (pass-through mode)
