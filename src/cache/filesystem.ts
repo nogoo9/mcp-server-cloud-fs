@@ -14,6 +14,14 @@ interface DirtyMeta {
 	key: string;
 }
 
+/**
+ * Disk-backed cache store using SHA-256 hashed filenames.
+ *
+ * Stores cached objects and metadata as pairs of `.bin` / `.meta.json` files
+ * in the configured directory. Supports TTL-based expiry and debounced flushing.
+ *
+ * @category Cache
+ */
 export class FilesystemStore implements CacheStore {
 	private readonly dirtyMap = new Map<string, DirtyMeta>();
 	private debounceTimer: ReturnType<typeof setTimeout> | null = null;

@@ -13,6 +13,14 @@ interface DirtyMeta {
 	key: string;
 }
 
+/**
+ * In-memory cache store with TTL expiry and debounced write-back.
+ *
+ * All data is held in a `Map` and lost on process exit. Suitable for
+ * development, testing, and single-process deployments.
+ *
+ * @category Cache
+ */
 export class MemoryStore implements CacheStore {
 	private readonly entries = new Map<string, Entry>();
 	private readonly dirtyMap = new Map<string, DirtyMeta>();

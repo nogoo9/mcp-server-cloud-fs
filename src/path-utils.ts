@@ -1,6 +1,17 @@
 // src/path-utils.ts
 import type { ParsedRoot } from "./providers/interface.js";
 
+/**
+ * Parse a cloud URI string into its component parts.
+ *
+ * Supported schemes: `s3://`, `az://`, `gs://`, `mem://`, `sqlite://`.
+ *
+ * @param uri - Cloud URI, e.g. `"s3://my-bucket/prefix"`.
+ * @returns Parsed root with scheme, bucket, prefix, and original URI.
+ * @throws If the URI does not match a supported scheme.
+ *
+ * @category Utilities
+ */
 export function parseUri(uri: string): ParsedRoot {
 	const m = uri.match(/^(s3|az|gs|mem|sqlite):\/\/([^/]+)(?:\/(.*))?$/);
 	if (!m) throw new Error(`Invalid cloud URI: ${uri}`);
@@ -45,6 +56,18 @@ function resolveRelative(root: ParsedRoot, relativePath: string): string {
 	return normalizeKey(base);
 }
 
+/**
+ * Resolve a tool path (relative or absolute URI) against allowed roots.
+ *
+ * Validates that the resolved path falls within at least one configured root.
+ * Throws `"Access denied: path is outside allowed roots"` on violation.
+ *
+ * @param allowedRoots - Configured storage roots to validate against.
+ * @param toolPath - User-supplied path (relative or absolute URI).
+ * @returns The matching root and the normalized key.
+ *
+ * @category Utilities
+ */
 export function resolveToolPath(
 	allowedRoots: ParsedRoot[],
 	toolPath: string,
@@ -92,7 +115,15 @@ export function resolveToolPath(
 	throw new Error("Access denied: path is outside allowed roots");
 }
 
-/** Builds the canonical cache key. `key` must be pre-normalized (from resolveToolPath). */
+/**
+ * Build a canonical cache key from a root and normalized object key.
+ *
+ * @param root - Parsed storage root.
+ * @param key - Pre-normalized object key (from {@link resolveToolPath}).
+ * @returns Cache key string in the format `scheme://bucket/key`.
+ *
+ * @category Utilities
+ */
 export function toCacheKey(root: ParsedRoot, key: string): string {
 	return `${root.scheme}://${root.bucket}/${key}`;
 }

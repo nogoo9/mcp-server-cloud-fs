@@ -40,8 +40,9 @@
     "build:app": "vite build -c src/app/vite.config.ts",
     "inspect": "bun x @modelcontextprotocol/inspector -- bun src/index.ts",
     "inspect:memory": "bun x @modelcontextprotocol/inspector -- bun src/index.ts memory mem://demo --enable-shell --seed-demo",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
+    "docs:typedoc": "typedoc && typedoc --options typedoc.internals.json",
+    "docs:dev": "bun run docs:typedoc && vitepress dev docs",
+    "docs:build": "bun run docs:typedoc && vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "files": [
@@ -76,13 +77,17 @@
   },
   "peerDependencies": {
     "ioredis": "",
-    "better-sqlite3": ""
+    "better-sqlite3": "",
+    "nosecone": ""
   },
   "peerDependenciesMeta": {
     "ioredis": {
       "optional": true
     },
     "better-sqlite3": {
+      "optional": true
+    },
+    "nosecone": {
       "optional": true
     }
   },
@@ -94,6 +99,10 @@
     "@xterm/xterm": "^6.0.0",
     "express": "^5.2.1",
     "ioredis": "^5.0.0",
+    "nosecone": "^1.4.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "typedoc-vitepress-theme": "^1.1.2",
     "typescript": "^5.0.0",
     "vite": "^8.0.12",
     "vite-plugin-singlefile": "^2.3.3",

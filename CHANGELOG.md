@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Config file support** — `cloud-fs.json` in CWD or `~/.config/cloud-fs/config.json` for persistent TUI configuration. CLI flags override config values.
 - **`--seed-demo` flag** — pre-populate storage with sample files (README, config, CSV, logs) for immediate exploration.
 - **`--ca-file <path>`** — PEM CA bundle for TLS verification of S3-compatible endpoints (MinIO, RustFS) and Redis (`rediss://`) using a private/self-signed CA. Injected directly into `ioredis` (`tls.ca`) and the S3 client (`NodeHttpHandler` + `https.Agent`). For runtime-wide CA trust (Azure, GCS, or all providers), use `NODE_EXTRA_CA_CERTS` instead.
+- **AI agent skill (`skills/cloud-fs`)** — installable skill that teaches AI coding assistants (Claude Code, Gemini CLI, etc.) how to use cloud-fs as a POSIX-like virtual filesystem. Includes MCP mode auto-detection, bootstrap flow for first-time setup, POSIX-to-MCP tool mapping, provider credential reference, and `.mcp.json` persistence guidance.
 
 ### Changed
 
@@ -40,6 +41,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Extracted `DEFAULT_REDIS_URL` constant to centralize the Redis fallback and eliminate pattern-match false positives
   - Added `nosemgrep` suppressions for intentional `redis://` string references in warning messages and E2E test fixtures
   - Replaced `Math.random()` with `crypto.randomInt()` / `crypto.randomBytes()` in test files for secure randomness
+- **Security headers** — opt-in HTTP response hardening via [nosecone](https://github.com/arcjet/arcjet-js/tree/main/nosecone) (framework-agnostic, works with both Bun-native and Node/Express transports):
+  - Sets `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, and other standard security headers
+  - `--security-headers` flag enables nosecone with defaults
+  - `--security-headers-config <json>` for inline JSON customization
+  - `--security-headers-config-file <path>` to load configuration from a file
+  - Headers are resolved once at startup and applied to every response (health checks, MCP, CORS preflight)
+  - `nosecone` is an optional peer dependency — only required when the flag is used
 
 
 ## [0.4.0] — 2026-05-12

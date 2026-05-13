@@ -1,0 +1,28 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/lib.ts"],
+  "entryPointStrategy": "expand",
+  "out": "docs/reference/api",
+  "docsRoot": "docs",
+  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  "tsconfig": "tsconfig.json",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "hideGenerator": true,
+  "disableSources": false,
+  "gitRevision": "main",
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Core",
+    "Providers",
+    "Cache",
+    "Auth",
+    "Middleware",
+    "Transports",
+    "Shell",
+    "Utilities",
+    "*"
+  ]
+}

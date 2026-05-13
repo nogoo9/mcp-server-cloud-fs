@@ -51,6 +51,9 @@ Production (http/ws only):
   --rate-limit <req/min>         Rate limit per client (default: 0 = disabled)
   --rate-limit-burst <n>         Burst allowance (default: 10)
   --request-logging              Enable structured JSON request logging
+  --security-headers             Enable security headers via nosecone
+  --security-headers-config <json>       Inline JSON config for nosecone options
+  --security-headers-config-file <path>  Load nosecone config from a JSON file
 
 Storage & Cache:
   --region <region>              Provider region (S3, GCS)
@@ -107,6 +110,8 @@ interface CliArgs {
 	rateLimit: number;
 	rateLimitBurst: number;
 	requestLogging: boolean;
+	enableSecurityHeaders: boolean;
+	securityHeadersOptions?: Record<string, unknown>;
 	// v0.4.1 — TLS
 	caFile?: string;
 }
@@ -149,6 +154,8 @@ function parseArgs(argv: string[]): CliArgs {
 	let rateLimit = 0;
 	let rateLimitBurst = 10;
 	let requestLogging = false;
+	let enableSecurityHeaders = false;
+	let securityHeadersOptions: Record<string, unknown> | undefined;
 
 	for (let i = 1; i < args.length; i++) {
 		const arg = args[i]!;
@@ -241,6 +248,33 @@ function parseArgs(argv: string[]): CliArgs {
 			requestLogging = true;
 		} else if (arg === "--ca-file") {
 			caFile = args[++i];
+		} else if (arg === "--security-headers") {
+			enableSecurityHeaders = true;
+		} else if (arg === "--security-headers-config") {
+			enableSecurityHeaders = true;
+			try {
+				securityHeadersOptions = JSON.parse(args[++i]!) as Record<
+					string,
+					unknown
+				>;
+			} catch {
+				console.error(
+					"Error: --security-headers-config value must be valid JSON.",
+				);
+				usage();
+			}
+		} else if (arg === "--security-headers-config-file") {
+			enableSecurityHeaders = true;
+			const filePath = args[++i]!;
+			try {
+				const raw = readFileSync(filePath, "utf8");
+				securityHeadersOptions = JSON.parse(raw) as Record<string, unknown>;
+			} catch {
+				console.error(
+					`Error: cannot read or parse --security-headers-config-file: ${filePath}`,
+				);
+				usage();
+			}
 		} else {
 			console.error(`Unknown argument: ${arg}`);
 			usage();
@@ -292,6 +326,8 @@ function parseArgs(argv: string[]): CliArgs {
 		rateLimit,
 		rateLimitBurst,
 		requestLogging,
+		enableSecurityHeaders,
+		...(securityHeadersOptions !== undefined && { securityHeadersOptions }),
 		// v0.4.1
 		...(caFile !== undefined && { caFile }),
 	};
@@ -642,6 +678,8 @@ async function main(): Promise<void> {
 		rateLimit: args.rateLimit,
 		rateLimitBurst: args.rateLimitBurst,
 		requestLogging: args.requestLogging,
+		enableSecurityHeaders: args.enableSecurityHeaders,
+		securityHeadersOptions: args.securityHeadersOptions,
 	});
 	await managed.start(server);
 

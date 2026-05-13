@@ -1,5 +1,23 @@
-// src/lib.ts
-// Public API — use this as the programmatic entry point for the library.
+/**
+ * # @nogoo9/mcp-server-cloud-fs
+ *
+ * Programmatic API for the Cloud FS MCP Server.
+ *
+ * This module re-exports all public types, classes, and functions needed to
+ * embed cloud-fs as a library in your own MCP server or application.
+ *
+ * ## Categories
+ *
+ * - **Core** — {@link VirtualFS}, {@link createMcpServer}, {@link ServerContext}
+ * - **Providers** — {@link S3Provider}, {@link AzureProvider}, {@link GcsProvider}, {@link MemoryProvider}, {@link SqliteProvider}
+ * - **Cache** — {@link MemoryStore}, {@link FilesystemStore}, {@link PassThroughCache}, {@link createRedisStore}
+ * - **Auth** — {@link ExternalTokenVerifier}, {@link EnterpriseAuthVerifier}, {@link SCOPES}
+ * - **Transports** — {@link createTransport}, {@link WebSocketServerTransport}
+ * - **Shell** — {@link executeShell}
+ * - **Utilities** — {@link parseUri}, {@link resolveToolPath}, {@link toCacheKey}, {@link inferContentType}
+ *
+ * @packageDocumentation
+ */
 
 export type { Scope } from "./auth/scopes.js";
 // Auth (v0.4.0)

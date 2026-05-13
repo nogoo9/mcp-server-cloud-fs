@@ -4,8 +4,14 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
+/** Supported transport protocols. @category Transports */
 export type TransportType = "stdio" | "http" | "ws";
 
+/**
+ * Configuration for HTTP and WebSocket transports.
+ *
+ * @category Transports
+ */
 export interface TransportOptions {
 	/** Listen port for http/ws transports. Default: 3000. */
 	port: number;
@@ -31,6 +37,10 @@ export interface TransportOptions {
 	rateLimitBurst: number;
 	/** Enable structured JSON request logging to stderr. */
 	requestLogging: boolean;
+	/** Enable security headers via nosecone (requires nosecone peer dependency). */
+	enableSecurityHeaders: boolean;
+	/** Custom nosecone options for security headers. See nosecone docs for available options. */
+	securityHeadersOptions?: Record<string, unknown> | undefined;
 }
 
 export const DEFAULT_TRANSPORT_OPTIONS: TransportOptions = {
@@ -42,9 +52,14 @@ export const DEFAULT_TRANSPORT_OPTIONS: TransportOptions = {
 	rateLimit: 0,
 	rateLimitBurst: 10,
 	requestLogging: false,
+	enableSecurityHeaders: false,
 };
 
-/** A managed transport wrapping start/stop lifecycle. */
+/**
+ * A managed transport wrapping the start/stop lifecycle.
+ *
+ * @category Transports
+ */
 export interface ManagedTransport {
 	/** The underlying SDK transport (or null for HTTP/WS where transport is per-session). */
 	transport: Transport | null;
@@ -54,13 +69,28 @@ export interface ManagedTransport {
 	stop(): Promise<void>;
 }
 
-/** Detect if running under Bun. */
+/**
+ * Detect if the current runtime is Bun.
+ *
+ * @returns `true` when running under Bun, `false` for Node.js.
+ *
+ * @category Transports
+ */
 export function isBun(): boolean {
 	return typeof globalThis !== "undefined" && "Bun" in globalThis;
 }
 
 /**
  * Create a managed transport based on type and runtime.
+ *
+ * Dynamically imports the appropriate transport module to avoid
+ * loading unnecessary dependencies.
+ *
+ * @param type - Transport protocol to use.
+ * @param options - Configuration for HTTP/WS transports.
+ * @returns A {@link ManagedTransport} ready to be started.
+ *
+ * @category Transports
  */
 export async function createTransport(
 	type: TransportType,

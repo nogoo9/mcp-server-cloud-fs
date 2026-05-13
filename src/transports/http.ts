@@ -6,6 +6,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { ManagedTransport, TransportOptions } from "./index.js";
 import { isBun } from "./index.js";
+import { createSecurityHeaders } from "./security-headers.js";
 
 /** Generate a UUID v7 session ID. Falls back to crypto.randomUUID() if uuidv7 is unavailable. */
 async function generateSessionId(): Promise<string> {
@@ -115,6 +116,14 @@ function createBunHttpTransport(options: TransportOptions): ManagedTransport {
 		async start(server: McpServer) {
 			_mcpServer = server;
 
+			// Resolve security headers once at startup
+			let secHeaders: Record<string, string> = {};
+			if (options.enableSecurityHeaders) {
+				secHeaders = await createSecurityHeaders(
+					options.securityHeadersOptions,
+				);
+			}
+
 			bunServer = Bun.serve({
 				port: options.port,
 				hostname: options.host,
@@ -124,12 +133,20 @@ function createBunHttpTransport(options: TransportOptions): ManagedTransport {
 					const url = new URL(req.url);
 					const origin = req.headers.get("Origin");
 
+					// Helper: apply security headers before returning any response
+					const finalize = (response: Response): Response => {
+						for (const [key, value] of Object.entries(secHeaders)) {
+							response.headers.set(key, value);
+						}
+						return response;
+					};
+
 					// CORS preflight
 					if (req.method === "OPTIONS") {
 						const cors = corsHeaders(origin, options.corsOrigins, isLocalhost);
 						if (options.requestLogging)
 							logRequest("OPTIONS", url.pathname, 204, startTime);
-						return new Response(null, { status: 204, headers: cors });
+						return finalize(new Response(null, { status: 204, headers: cors }));
 					}
 
 					// Health checks
@@ -142,14 +159,14 @@ function createBunHttpTransport(options: TransportOptions): ManagedTransport {
 								healthResp.status,
 								startTime,
 							);
-						return healthResp;
+						return finalize(healthResp);
 					}
 
 					// Only handle /mcp path
 					if (url.pathname !== "/mcp") {
 						if (options.requestLogging)
 							logRequest(req.method, url.pathname, 404, startTime);
-						return new Response("Not Found", { status: 404 });
+						return finalize(new Response("Not Found", { status: 404 }));
 					}
 
 					// Resolve or create session transport
@@ -205,7 +222,7 @@ function createBunHttpTransport(options: TransportOptions): ManagedTransport {
 						);
 					}
 
-					return response;
+					return finalize(response);
 				},
 			}) as BunServer;
 
@@ -240,6 +257,14 @@ function createNodeHttpTransport(options: TransportOptions): ManagedTransport {
 		transport: null,
 
 		async start(server: McpServer) {
+			// Resolve security headers once at startup
+			let secHeaders: Record<string, string> = {};
+			if (options.enableSecurityHeaders) {
+				secHeaders = await createSecurityHeaders(
+					options.securityHeadersOptions,
+				);
+			}
+
 			// Dynamic imports — Express is an optional peer dependency
 			let expressFn: (...args: unknown[]) => unknown;
 			let expressJson: (...args: unknown[]) => unknown;
@@ -302,6 +327,10 @@ function createNodeHttpTransport(options: TransportOptions): ManagedTransport {
 				const origin = req.headers.origin ?? null;
 				const cors = corsHeaders(origin, options.corsOrigins, isLocalhost);
 				for (const [key, value] of Object.entries(cors)) {
+					res.setHeader(key, value);
+				}
+				// Security headers
+				for (const [key, value] of Object.entries(secHeaders)) {
 					res.setHeader(key, value);
 				}
 				if (req.method === "OPTIONS") {

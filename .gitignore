@@ -9,6 +9,9 @@ docs/superpowers
 .mcpregistry*_token
 docs/.vitepress/cache
 docs/.vitepress/dist
+# Generated API docs (on-demand via typedoc)
+docs/reference/api/
+docs/reference/internals/
 # AI agent skills — installed via `bun x skills add semgrep/skills`, not committed
 .agents/skills/
 

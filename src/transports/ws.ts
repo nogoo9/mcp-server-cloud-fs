@@ -27,6 +27,8 @@ async function generateSessionId(): Promise<string> {
 /**
  * WebSocket server transport adapter.
  * Wraps a Bun WebSocket connection to implement the MCP SDK Transport interface.
+ *
+ * @category Transports
  */
 export class WebSocketServerTransport implements Transport {
 	sessionId?: string;

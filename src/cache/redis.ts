@@ -14,6 +14,15 @@ interface RedisClient {
 	del(key: string): Promise<unknown>;
 }
 
+/**
+ * Redis-backed cache store using ioredis.
+ *
+ * Uses Redis `SETEX` for TTL-based storage with debounced write-back.
+ * Requires ioredis as an optional peer dependency — use {@link createRedisStore}
+ * to construct with automatic dependency checking.
+ *
+ * @category Cache
+ */
 export class RedisStore implements CacheStore {
 	private readonly dirtyMap = new Map<string, DirtyMeta>();
 	private debounceTimer: ReturnType<typeof setTimeout> | null = null;

@@ -49,6 +49,8 @@ function err(text: string): TextToolResult {
  * });
  * console.log(result);
  * ```
+ *
+ * @category Shell
  */
 export async function executeShell(
 	command: string,

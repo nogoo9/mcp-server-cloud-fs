@@ -21,6 +21,16 @@ import type {
 	StorageProvider,
 } from "./interface.js";
 
+/**
+ * AWS S3 storage provider using the AWS SDK v3.
+ *
+ * URI format: `s3://bucket-name/optional-prefix`
+ *
+ * Supports custom endpoints (MinIO, RustFS), server-side encryption,
+ * and custom CA certificates via the `caFile` option.
+ *
+ * @category Providers
+ */
 export class S3Provider implements StorageProvider {
 	private readonly client: S3Client;
 	/** Default fields merged into every PutObjectCommand (excluding Bucket/Key/Body/ContentType). */

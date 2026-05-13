@@ -12,6 +12,16 @@ import type {
 	StorageProvider,
 } from "./interface.js";
 
+/**
+ * Azure Blob Storage provider using the Azure Storage SDK.
+ *
+ * URI format: `az://container-name/optional-prefix`
+ *
+ * Supports connection string or account name + key authentication,
+ * with configurable upload options (e.g. access tier).
+ *
+ * @category Providers
+ */
 export class AzureProvider implements StorageProvider {
 	private readonly client: BlobServiceClient;
 	/** Default options merged into every BlockBlobClient.upload() call. */

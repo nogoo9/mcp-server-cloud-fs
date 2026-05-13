@@ -102,6 +102,8 @@ async function openDatabase(dbPath: string): Promise<SqliteDb> {
  * const root = parseUri("sqlite://my-bucket");
  * await provider.putObject(root, "hello.txt", Buffer.from("world"));
  * ```
+ *
+ * @category Providers
  */
 export class SqliteProvider implements StorageProvider {
 	private readonly db: SqliteDb;

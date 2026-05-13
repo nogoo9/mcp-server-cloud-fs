@@ -11,6 +11,14 @@ import { registerShellTool } from "./tools/shell/index.js";
 import { registerWriteTools } from "./tools/write.js";
 import type { VirtualFS } from "./vfs.js";
 
+/**
+ * Configuration object passed to {@link createMcpServer}.
+ *
+ * Holds the VFS instance, configured storage roots, and feature flags
+ * that control which tools are registered on the MCP server.
+ *
+ * @category Core
+ */
 export interface ServerContext {
 	vfs: VirtualFS;
 	roots: ParsedRoot[];
@@ -133,6 +141,18 @@ async function tryRegisterShellApp(server: McpServer): Promise<void> {
 	);
 }
 
+/**
+ * Create and configure an MCP server with all cloud-fs tools.
+ *
+ * Registers read, write, directory, move, search, info, and extended tool
+ * groups. Optionally registers the shell tool and xterm.js shell app
+ * when `ctx.enableShell` is `true`.
+ *
+ * @param ctx - Server configuration including VFS, roots, and feature flags.
+ * @returns A fully configured {@link McpServer} ready to be connected to a transport.
+ *
+ * @category Core
+ */
 export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	const server = new McpServer({
 		name: "mcp-server-cloud-fs",

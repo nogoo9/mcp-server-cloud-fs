@@ -196,3 +196,74 @@ describe("MCP e2e — HTTP transport (memory provider)", () => {
 		expect(text).toBe("modified content");
 	});
 });
+
+// ------------------------------------------------------------------
+// Security headers E2E tests
+// ------------------------------------------------------------------
+
+const SEC_PORT = 19384 + randomInt(1000) + 2000;
+const SEC_BASE_URL = `http://127.0.0.1:${SEC_PORT}`;
+
+let secProc: Subprocess | null = null;
+
+describe("MCP e2e — HTTP transport with security headers", () => {
+	beforeAll(async () => {
+		secProc = Bun.spawn(
+			[
+				"bun",
+				"run",
+				"src/index.ts",
+				"memory",
+				"mem://e2e-sec",
+				"--transport",
+				"http",
+				"--port",
+				String(SEC_PORT),
+				"--host",
+				"127.0.0.1",
+				"--security-headers",
+			],
+			{
+				stdout: "ignore",
+				stderr: "pipe",
+			},
+		);
+
+		await waitForReady(SEC_BASE_URL);
+	});
+
+	afterAll(() => {
+		secProc?.kill();
+		secProc = null;
+	});
+
+	it("healthz response includes nosecone security headers", async () => {
+		const r = await fetch(`${SEC_BASE_URL}/healthz`);
+		expect(r.status).toBe(200);
+
+		// Nosecone default headers
+		expect(r.headers.get("x-content-type-options")).toBe("nosniff");
+		expect(r.headers.get("x-frame-options")).toBeTruthy();
+		expect(r.headers.get("content-security-policy")).toBeTruthy();
+	});
+
+	it("MCP endpoint response includes security headers", async () => {
+		// POST to /mcp without session — should get an MCP response with security headers
+		const r = await fetch(`${SEC_BASE_URL}/mcp`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				jsonrpc: "2.0",
+				id: 1,
+				method: "initialize",
+				params: {
+					protocolVersion: "2025-03-26",
+					capabilities: {},
+					clientInfo: { name: "sec-test", version: "1.0.0" },
+				},
+			}),
+		});
+
+		expect(r.headers.get("x-content-type-options")).toBe("nosniff");
+	});
+});

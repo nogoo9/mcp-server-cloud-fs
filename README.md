@@ -12,6 +12,7 @@
   <br/>
   <a href="https://www.npmjs.com/package/@nogoo9/mcp-server-cloud-fs"><img src="https://img.shields.io/npm/v/@nogoo9/mcp-server-cloud-fs" alt="npm"></a>
   <img src="https://img.shields.io/npm/dm/%40nogoo9%2Fmcp-server-cloud-fs" alt="NPM Downloads">
+  <a href="https://skills.sh/nogoo9/mcp-server-cloud-fs"><img src="https://skills.sh/b/nogoo9/mcp-server-cloud-fs" alt="skills.sh"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue" alt="License"></a>
 </p>
 
@@ -50,6 +51,7 @@
 - [Programmatic Usage](#programmatic-usage-npm-library)
 - [MCP Inspector](#mcp-inspector)
 - [Development & Testing](#development--testing)
+- [AI Agent Skill](#ai-agent-skill)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -70,7 +72,8 @@ A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, a **she
 - **Dual runtime**: Bun-native and Node.js support (HTTP transport + SQLite provider)
 - **OAuth 2.1**: Built-in auth server or external IdP token validation
 - **ext-auth extensions**: Client Credentials (M2M) and Enterprise-Managed Authorization (SSO)
-- **Production hardening**: Rate limiting, CORS, health checks, structured logging
+- **Production hardening**: Rate limiting, CORS, security headers, health checks, structured logging
+- **AI agent skill**: Installable `skills/cloud-fs` for Claude Code, Gemini CLI, and other AI assistants
 
 ---
 
@@ -180,6 +183,7 @@ cloud-fs-mcp s3 s3://my-bucket \
   --auth external --auth-jwks-uri https://login.example.com/.well-known/jwks.json \
   --cors-origin https://app.example.com \
   --rate-limit 60 --rate-limit-burst 10 \
+  --security-headers \
   --request-logging
 ```
 
@@ -351,6 +355,36 @@ Enable with `--request-logging`.
 
 Automatically applied when binding to localhost addresses. Validates the `Host` header against allowed hostnames to prevent DNS rebinding attacks.
 
+### Security Headers
+
+Opt-in HTTP response hardening via [nosecone](https://github.com/arcjet/arcjet-js/tree/main/nosecone) — a framework-agnostic security headers library. Works with both Bun-native and Node/Express transports.
+
+When enabled, every HTTP response includes standard security headers:
+
+- `Content-Security-Policy`
+- `Strict-Transport-Security`
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options`
+- `Cross-Origin-Opener-Policy`
+- `Cross-Origin-Resource-Policy`
+- `Referrer-Policy`
+- And more (see [nosecone defaults](https://docs.arcjet.com/nosecone/quick-start))
+
+```bash
+# Enable with defaults
+cloud-fs-mcp s3 s3://my-bucket --transport http --security-headers
+
+# Custom configuration via inline JSON
+cloud-fs-mcp s3 s3://my-bucket --transport http \
+  --security-headers-config '{"contentSecurityPolicy":false}'
+
+# Custom configuration via file
+cloud-fs-mcp s3 s3://my-bucket --transport http \
+  --security-headers-config-file ./nosecone.json
+```
+
+> **Note:** Requires the `nosecone` peer dependency: `npm install nosecone`
+
 ---
 
 ## CLI Reference
@@ -398,6 +432,9 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--rate-limit <req/min>` | `0` (off) | Rate limit per client |
 | `--rate-limit-burst <n>` | `10` | Burst allowance |
 | `--request-logging` | `false` | Enable structured JSON request logging |
+| `--security-headers` | `false` | Enable security headers via nosecone |
+| `--security-headers-config <json>` | — | Inline JSON config for nosecone |
+| `--security-headers-config-file <path>` | — | Load nosecone config from a JSON file |
 
 #### Storage & Cache
 
@@ -818,6 +855,32 @@ The CI workflow runs on every push/PR:
 2. **e2e** job: full E2E with Docker Compose (MinIO, Redis)
 
 HTTP E2E tests use the in-memory provider and need zero infrastructure, making them fast and reliable for every CI run.
+
+---
+
+## AI Agent Skill
+
+The `skills/cloud-fs` directory contains an installable AI agent skill that teaches coding assistants (Claude Code, Gemini CLI, etc.) how to use cloud-fs as a POSIX-like virtual filesystem. Install it to give your assistant fluency with cloud storage commands.
+
+### What it provides
+
+- **MCP mode auto-detection** — recognizes `mcp__cloud-fs__*` tools and maps user intents to the right tool calls
+- **Bootstrap flow** — walks the user through first-time setup when the MCP server isn't configured yet
+- **POSIX-to-MCP mapping** — translates shell commands (`ls`, `cat`, `grep`, `find`, `cp`, etc.) into the correct MCP tool calls
+- **Provider credential reference** — AWS, Azure, GCS, MinIO/RustFS, SQLite setup guidance
+- **`.mcp.json` persistence** — offers to save provider configuration so future sessions are pre-wired
+
+### Installation
+
+```bash
+# Claude Code
+claude mcp add-skill ./skills/cloud-fs
+
+# Gemini CLI
+bun x skills add ./skills/cloud-fs
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md#ai-agent-skills) for details on the skill system.
 
 ---
 
