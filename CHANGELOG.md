@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.1] — 2026-05-13
+
+### Security
+
+- **Dependency audit** — resolved 12 of 13 `bun audit` vulnerabilities:
+  - `hono` 4.12.15 → 4.12.18 (4 moderate + 1 low)
+  - `fast-uri` 3.1.0 → 3.1.2 (2 high)
+  - `fast-xml-builder` 1.1.5 → 1.2.0 (1 high + 1 moderate)
+  - `ip-address` 10.1.0 → 10.2.0 (1 moderate)
+  - `vitepress` 1.6.4 → 2.0.0-alpha.17, pulling `vite` 5 → 7 (path traversal in `.map` handling) and `esbuild` 0.21 → 0.27 (dev server CORS bypass)
+  - Remaining 1 unfixable (low): `@tootallnate/once` — deeply nested in GCS/Azure SDK transitive deps
+- **File inclusion fix** — sanitized file path handling in `scripts/docs-landing.ts` to prevent potential file inclusion attack; added 254-line test suite
+- **Pinned GitHub Actions** — all 3rd-party actions in CI, docs, and publish workflows pinned to full commit SHA to prevent supply-chain attacks
+- **Redis TLS warning** — runtime `console.warn` when `REDIS_URL` uses unencrypted `redis://` transport; recommends `rediss://` for production TLS connections
+- **SAST remediation** — resolved all Semgrep findings (`p/security-audit`, `p/javascript`, `p/trailofbits`, `p/owasp-top-ten`, `p/cwe-top-25`):
+  - Extracted `DEFAULT_REDIS_URL` constant to centralize the Redis fallback and eliminate pattern-match false positives
+  - Added `nosemgrep` suppressions for intentional `redis://` string references in warning messages and E2E test fixtures
+  - Replaced `Math.random()` with `crypto.randomInt()` / `crypto.randomBytes()` in test files for secure randomness
+
 ## [0.4.0] — 2026-05-12
 
 ### Added

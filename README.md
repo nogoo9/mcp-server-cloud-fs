@@ -3,6 +3,7 @@
 [![CI](https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml/badge.svg)](https://github.com/nogoo9/mcp-server-cloud-fs/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-GitHub_Pages-blue?logo=github)](https://nogoo9.github.io/mcp-server-cloud-fs/)
 [![Coverage Status](https://coveralls.io/repos/github/nogoo9/mcp-server-cloud-fs/badge.svg?branch=main)](https://coveralls.io/github/nogoo9/mcp-server-cloud-fs?branch=main)
+[![Semgrep](https://img.shields.io/badge/SAST-Semgrep-4B11A8?logo=semgrep&logoColor=white)](https://semgrep.dev)
 [![npm](https://img.shields.io/npm/v/@nogoo9/mcp-server-cloud-fs)](https://www.npmjs.com/package/@nogoo9/mcp-server-cloud-fs)
 ![NPM Downloads](https://img.shields.io/npm/dm/%40nogoo9%2Fmcp-server-cloud-fs)
 [![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue)](LICENSE)
