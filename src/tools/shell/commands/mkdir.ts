@@ -1,6 +1,6 @@
 // src/tools/shell/commands/mkdir.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -24,7 +24,7 @@ export const mkdir: ShellCommandHandler = async (args, ctx, _stdin) => {
 	}
 
 	for (const path of paths) {
-		const { root, key } = resolveToolPath(ctx.roots, path);
+		const { root, key } = resolveShellPath(ctx.roots, path, ctx.cwd);
 		const prefix = key.endsWith("/") ? key : `${key}/`;
 		await ctx.vfs.createPrefix(root, prefix);
 	}

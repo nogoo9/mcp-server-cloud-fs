@@ -51,6 +51,20 @@ Try the in-memory provider with pre-seeded sample files:
 bunx @nogoo9/mcp-server-cloud-fs memory mem://demo --enable-shell --seed-demo
 ```
 
+### Interactive Shell (`cloud-fs`)
+
+Drop into an interactive terminal for exploring and managing cloud storage — no MCP client needed:
+
+```bash
+# S3
+npx -p @nogoo9/mcp-server-cloud-fs cloud-fs s3 s3://my-bucket
+
+# In-memory demo with sample files
+npx -p @nogoo9/mcp-server-cloud-fs cloud-fs memory mem://demo --seed-demo
+```
+
+Features: `cd` navigation with dynamic prompt, tab completion, command history, relative paths, 19 built-in commands including `jq`, and pipes/redirects.
+
 ## MCP Client Configuration
 
 ### Claude Desktop

@@ -9,3 +9,6 @@ docs/superpowers
 .mcpregistry*_token
 docs/.vitepress/cache
 docs/.vitepress/dist
+# AI agent skills — installed via `bun x skills add semgrep/skills`, not committed
+.agents/skills/
+

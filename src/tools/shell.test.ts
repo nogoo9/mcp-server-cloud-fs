@@ -11,6 +11,7 @@ import { diff } from "./shell/commands/diff.js";
 import { echo } from "./shell/commands/echo.js";
 import { grep } from "./shell/commands/grep.js";
 import { head } from "./shell/commands/head.js";
+import { jq } from "./shell/commands/jq.js";
 import { mkdir } from "./shell/commands/mkdir.js";
 import { mv } from "./shell/commands/mv.js";
 import { rm } from "./shell/commands/rm.js";
@@ -370,6 +371,55 @@ describe("diff", () => {
 		);
 		expect(result).toContain("-line A");
 		expect(result).toContain("+line B");
+	});
+});
+
+describe("jq", () => {
+	test("selects simple key", async () => {
+		const ctx = makeCtx({ content: '{"version": "1.0.0"}' });
+		const result = await jq(
+			[".version", "s3://test-bucket/config.json"],
+			ctx,
+			null,
+		);
+		expect(result).toBe("1.0.0");
+	});
+
+	test("handles nested keys", async () => {
+		const ctx = makeCtx({ content: '{"app": {"metadata": {"name": "test"}}}' });
+		const result = await jq(
+			[".app.metadata.name", "s3://test-bucket/config.json"],
+			ctx,
+			null,
+		);
+		expect(result).toBe("test");
+	});
+
+	test("handles array access", async () => {
+		const ctx = makeCtx({ content: '{"items": [{"id": 1}, {"id": 2}]}' });
+		const result = await jq(
+			[".items[1].id", "s3://test-bucket/config.json"],
+			ctx,
+			null,
+		);
+		expect(result).toBe("2");
+	});
+
+	test("pretty prints objects", async () => {
+		const ctx = makeCtx({ content: '{"a":1}' });
+		const result = await jq([".", "s3://test-bucket/config.json"], ctx, null);
+		expect(result).toBe('{\n  "a": 1\n}');
+	});
+
+	test("works on stdin", async () => {
+		const ctx = makeCtx();
+		const result = await jq([".foo"], ctx, '{"foo": "bar"}');
+		expect(result).toBe("bar");
+	});
+
+	test("throws on invalid JSON", async () => {
+		const ctx = makeCtx();
+		await expect(jq(["."], ctx, "{invalid")).rejects.toThrow("invalid JSON");
 	});
 });
 

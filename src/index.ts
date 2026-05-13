@@ -11,7 +11,7 @@ import { GcsProvider } from "./providers/gcs.js";
 import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
 import { MemoryProvider } from "./providers/memory.js";
 import { S3Provider } from "./providers/s3.js";
-import { SqliteProvider } from "./providers/sqlite.js";
+
 import { createMcpServer } from "./server.js";
 import {
 	createTransport,
@@ -556,7 +556,8 @@ async function main(): Promise<void> {
 	} else if (args.providerName === "memory") {
 		provider = new MemoryProvider();
 	} else if (args.providerName === "sqlite") {
-		provider = new SqliteProvider({ dbPath: args.sqliteDb! });
+		const { SqliteProvider } = await import("./providers/sqlite.js");
+		provider = await SqliteProvider.create({ dbPath: args.sqliteDb! });
 	} else {
 		provider = new GcsProvider({
 			...(process.env.GOOGLE_CLOUD_PROJECT && {

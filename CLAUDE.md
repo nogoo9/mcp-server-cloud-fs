@@ -86,7 +86,37 @@ Proto pins the Bun version via `.prototools`. Run `proto use` to install the pin
 ```
 cloud-fs-mcp <s3|azure|gcs|memory|sqlite> <root-uri> [root-uri...] [options]
 ```
-Credentials always come from SDK credential chains (env, `~/.aws`, `DefaultAzureCredential`, ADC) — never CLI flags. Non-secret config (`--transport`, `--port`, `--host`, `--auth`, `--cors-origin`, `--rate-limit`, `--region`, `--endpoint`, `--cache-store`, `--cache-ttl`, `--sync-debounce`, `--cache-dir`, `--no-cache`, `--enable-delete`, `--enable-shell`, `--grep-max-objects`, `--seed-demo`) is passed as flags.
+CLI flags available: `--transport`, `--port`, `--host`, `--auth`, `--cors-origin`, `--rate-limit`, `--rate-limit-burst`, `--request-logging`, `--region`, `--endpoint`, `--cache-store`, `--cache-ttl`, `--sync-debounce`, `--cache-dir`, `--no-cache`, `--gcs-endpoint`, `--sqlite-db`, `--ca-file`, `--enable-delete`, `--enable-shell`, `--grep-max-objects`, `--seed-demo`.
+
+`--ca-file <path>` injects a PEM CA bundle into S3-compatible clients (`NodeHttpHandler` + `https.Agent`) and Redis (`tls.ca`). For runtime-wide CA trust (Azure, GCS), use `NODE_EXTRA_CA_CERTS` instead.
+
+## Agent Workflows & Rules
+
+Slash-command workflows and always-on rules are defined in `.agents/`. Use these consistently — never bypass them.
+
+### Workflows
+
+| Slash command | File | When to use |
+|---|---|---|
+| `/format` | `.agents/workflows/format.md` | After **any** code change — runs `bun run format` then `bun run typecheck` |
+| `/commit` | `.agents/workflows/commit.md` | When committing changes — runs format → typecheck → safety review → generates commit message → `git add -A && git commit` |
+| `/bump` | `.agents/workflows/bump.md` | Version bump — inspects commits since last tag, picks semver level, updates `package.json`/`server.json`/CHANGELOG/docs |
+| `/test-local` | `.agents/workflows/test-local.md` | Full local gate (no Docker) — format, typecheck, unit tests, HTTP E2E, docs build |
+| `/test-e2e` | `.agents/workflows/test-e2e.md` | Full E2E with Docker — HTTP E2E → `infra:up` → health checks → infra E2E → `infra:down` |
+| `/security` | `.agents/workflows/security.md` | SAST scan via Semgrep on changed files — required before every push |
+| `/docs` | `.agents/workflows/docs.md` | Update VitePress docs — audits every page against source, regenerates stale diagrams, verifies `docs:build` |
+| `/setup-skills` | `.agents/workflows/setup-skills.md` | Install required AI agent skills after cloning (skills are gitignored) |
+| `/setup-env` | `.agents/workflows/setup-env.md` | Full environment check — verifies Bun, Node, Docker, Semgrep CLI, Git, installs deps, runs smoke tests, then sets up skills |
+
+### Rules (always active)
+
+| Rule file | Trigger | Effect |
+|---|---|---|
+| `.agents/rules/format.md` | `always_on` | Run `/format` after every code change. Task is not complete until both `bun run format` and `bun run typecheck` pass. |
+| `.agents/rules/pre-push.md` | `always_on` | Before `git push`: format → typecheck → unit tests → HTTP E2E → `/security` → docs build. All six must pass. Never force-push `main`. |
+| `.agents/rules/code-design.md` | `always_on` | Think before coding, simplicity first, surgical changes, goal-driven execution. |
+| `.agents/rules/commit.md` | `model_decision` | Route all commit/stage requests through `/commit` workflow. Never use `git commit --no-verify`. |
+| `.agents/rules/docs.md` | `model_decision` | After implementing a feature, run `/docs` to sync all affected doc pages, README, CHANGELOG, and diagrams. |
 
 ## Releasing
 

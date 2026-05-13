@@ -55,6 +55,7 @@ All emulator services are defined in `infra/docker-compose.yml`:
 | Azurite | 10000 | Azure Blob Storage provider tests |
 | fake-gcs-server | 4443 | Google Cloud Storage provider tests |
 | Redis | 6379 | Redis cache backend tests + E2E |
+| RustFS | 9002 | S3-compatible (Rust-native) provider tests |
 
 ```bash
 bun run infra:up       # start all containers

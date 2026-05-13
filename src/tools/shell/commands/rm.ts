@@ -1,6 +1,6 @@
 // src/tools/shell/commands/rm.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -21,7 +21,7 @@ export const rm: ShellCommandHandler = async (args, ctx, _stdin) => {
 
 	for (const path of args) {
 		if (path.startsWith("-")) continue; // ignore flags like -f, -r for now
-		const { root, key } = resolveToolPath(ctx.roots, path);
+		const { root, key } = resolveShellPath(ctx.roots, path, ctx.cwd);
 		await ctx.vfs.remove(root, key);
 	}
 	return "";

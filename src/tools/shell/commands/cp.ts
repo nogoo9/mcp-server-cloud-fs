@@ -1,6 +1,6 @@
 // src/tools/shell/commands/cp.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -16,8 +16,16 @@ export const cp: ShellCommandHandler = async (args, ctx, _stdin) => {
 		throw new Error("cp: too many arguments");
 	}
 
-	const { root: srcRoot, key: srcKey } = resolveToolPath(ctx.roots, args[0]!);
-	const { root: dstRoot, key: dstKey } = resolveToolPath(ctx.roots, args[1]!);
+	const { root: srcRoot, key: srcKey } = resolveShellPath(
+		ctx.roots,
+		args[0]!,
+		ctx.cwd,
+	);
+	const { root: dstRoot, key: dstKey } = resolveShellPath(
+		ctx.roots,
+		args[1]!,
+		ctx.cwd,
+	);
 
 	await ctx.vfs.copy(srcRoot, srcKey, dstRoot, dstKey);
 	return "";

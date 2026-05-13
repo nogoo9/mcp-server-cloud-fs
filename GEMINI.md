@@ -83,9 +83,33 @@ When preparing a release:
 3. CICD: Publish to npm: `npm publish`.
 4. CICD: Update the MCP registry: `npx mcp-publisher publish`.
 
-## AI Agents' Rules
+## AI Agents' Rules & Workflows
 
-- Always use `bun run format` to lint and auto-fix before commits.
+Slash-command workflows and always-on rules live in `.agents/`. **Always use them — never bypass.**
+
+### Workflows
+
+| Slash command | File | When to use |
+|---|---|---|
+| `/format` | `.agents/workflows/format.md` | After **any** code change — `bun run format` + `bun run typecheck` |
+| `/commit` | `.agents/workflows/commit.md` | When committing — format → typecheck → safety review → generated commit message → `git add -A && git commit` |
+| `/bump` | `.agents/workflows/bump.md` | Version bump — reads commits since last tag, picks semver level, updates `package.json`, `server.json`, CHANGELOG, docs |
+| `/test-local` | `.agents/workflows/test-local.md` | Full local gate (no Docker) — format, typecheck, unit tests, HTTP E2E, docs build |
+| `/test-e2e` | `.agents/workflows/test-e2e.md` | Full E2E with Docker — HTTP E2E → `infra:up` → health checks → infra E2E → teardown |
+| `/security` | `.agents/workflows/security.md` | SAST scan via Semgrep on changed files — mandatory before every push |
+| `/docs` | `.agents/workflows/docs.md` | Sync VitePress docs — audits every page against source, regenerates stale diagrams, verifies `docs:build` |
+| `/setup-skills` | `.agents/workflows/setup-skills.md` | Install required AI agent skills after cloning (skills are gitignored) |
+| `/setup-env` | `.agents/workflows/setup-env.md` | Full environment check — verifies Bun, Node, Docker, Semgrep CLI, Git, installs deps, runs smoke tests, then sets up skills |
+
+### Rules
+
+| Rule | Trigger | Effect |
+|---|---|---|
+| `.agents/rules/format.md` | `always_on` | Run `/format` after every code change. Task is not done until both `bun run format` and `bun run typecheck` pass with zero errors. |
+| `.agents/rules/pre-push.md` | `always_on` | Before `git push`: run `/test-local` (format → typecheck → unit tests → HTTP E2E → `/security` → docs build). All six must pass. Never force-push `main`. |
+| `.agents/rules/code-design.md` | `always_on` | Think before coding, simplicity first, surgical changes, goal-driven execution. |
+| `.agents/rules/commit.md` | `model_decision` | When user asks to commit/stage, run `/commit` workflow. Never use `git commit --no-verify`. |
+| `.agents/rules/docs.md` | `model_decision` | After a feature is committed, run `/docs` to update affected pages, README, CHANGELOG, and diagrams. |
 
 ## Documentation Diagrams
 

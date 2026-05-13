@@ -1,13 +1,14 @@
 {
   "name": "@nogoo9/mcp-server-cloud-fs",
   "mcpName": "io.github.nogoo9/mcp-server-cloud-fs",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Cloud replacement for mcp-server-filesystem — 20 tools for S3, Azure Blob, and GCS",
   "author": "eterna2",
   "contributors": ["eterna2"],
   "type": "module",
   "bin": {
-    "cloud-fs-mcp": "dist/index.js"
+    "cloud-fs-mcp": "dist/index.js",
+    "cloud-fs": "dist/cli-tui.js"
   },
   "main": "dist/lib.js",
   "types": "dist/lib.d.ts",
@@ -37,8 +38,8 @@
     "infra:setup": "docker compose -f infra/docker-compose.yml up -d",
     "infra:logs": "docker compose -f infra/docker-compose.yml logs",
     "build:app": "vite build -c src/app/vite.config.ts",
-    "inspect": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts",
-    "inspect:memory": "npx -y @modelcontextprotocol/inspector -- bun src/index.ts memory mem://demo --enable-shell --seed-demo",
+    "inspect": "bun x @modelcontextprotocol/inspector -- bun src/index.ts",
+    "inspect:memory": "bun x @modelcontextprotocol/inspector -- bun src/index.ts memory mem://demo --enable-shell --seed-demo",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
@@ -74,10 +75,14 @@
     "zod": "^3.0.0"
   },
   "peerDependencies": {
-    "ioredis": ""
+    "ioredis": "",
+    "better-sqlite3": ""
   },
   "peerDependenciesMeta": {
     "ioredis": {
+      "optional": true
+    },
+    "better-sqlite3": {
       "optional": true
     }
   },

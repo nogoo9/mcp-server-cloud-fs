@@ -1,6 +1,6 @@
 // src/tools/shell/commands/grep.ts
 
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
@@ -48,7 +48,7 @@ export const grep: ShellCommandHandler = async (args, ctx, stdin) => {
 	}
 
 	const path = positional[1]!;
-	const { root, key } = resolveToolPath(ctx.roots, path);
+	const { root, key } = resolveShellPath(ctx.roots, path, ctx.cwd);
 
 	if (recursive) {
 		// Recursive: list all objects under prefix and grep each

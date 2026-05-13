@@ -4,11 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.4.1] — 2026-05-13
+## [0.5.0] — 2026-05-14
 
 ### Added
 
+- **Interactive TUI (`cloud-fs`)** — new binary for terminal-based cloud storage exploration. Powered by `node:readline` with tab completion, persistent history (`~/.cloud-fs_history`), ANSI-colored UI, and a command queue for correct async sequencing. Runs on both Bun and Node.js.
+- **`cd` command** — navigate directories within the virtual filesystem. Supports `cd <dir>`, `cd ..`, `cd /`, with prompt reflecting the current working directory. All 19 shell commands resolve paths relative to `cwd`.
+- **`jq` command** — native, zero-dependency JSON processor for the shell. Supports key extraction, array indexing, nested paths, and piping from `cat`.
+- **Relative path support** — all tools and shell commands resolve paths relative to the primary root prefix. `ls`, `find`, and other commands output relative paths by default for shell composability.
+- **Config file support** — `cloud-fs.json` in CWD or `~/.config/cloud-fs/config.json` for persistent TUI configuration. CLI flags override config values.
+- **`--seed-demo` flag** — pre-populate storage with sample files (README, config, CSV, logs) for immediate exploration.
 - **`--ca-file <path>`** — PEM CA bundle for TLS verification of S3-compatible endpoints (MinIO, RustFS) and Redis (`rediss://`) using a private/self-signed CA. Injected directly into `ioredis` (`tls.ca`) and the S3 client (`NodeHttpHandler` + `https.Agent`). For runtime-wide CA trust (Azure, GCS, or all providers), use `NODE_EXTRA_CA_CERTS` instead.
+
+### Changed
+
+- **SQLite provider: dual-runtime support** — uses `bun:sqlite` on Bun and `better-sqlite3` on Node.js. Constructor replaced with async factory `SqliteProvider.create()` (**breaking** for direct consumers of `SqliteProvider`).
+- **Bootstrap refactor** — extracted `src/bootstrap.ts` to share VFS/provider/cache initialization between the MCP server and the TUI binary.
+- **Shell path resolution** — introduced `resolveShellPath()` in `src/tools/shell/resolve.ts` to prepend `cwd` to relative paths, keeping `resolveToolPath` unchanged for non-shell tools.
+- **`isAbsoluteUri` regex** — fixed `[a-z]+` → `[a-z][a-z0-9]*` to correctly handle schemes like `s3://`.
+- **WebSocket transport** — replaced `any`-typed `bunServerRef` with a structural type for type safety.
 
 ### Security
 
@@ -26,6 +40,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Extracted `DEFAULT_REDIS_URL` constant to centralize the Redis fallback and eliminate pattern-match false positives
   - Added `nosemgrep` suppressions for intentional `redis://` string references in warning messages and E2E test fixtures
   - Replaced `Math.random()` with `crypto.randomInt()` / `crypto.randomBytes()` in test files for secure randomness
+
 
 ## [0.4.0] — 2026-05-12
 

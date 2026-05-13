@@ -113,6 +113,56 @@ describe("resolveToolPath", () => {
 	});
 });
 
+describe("resolveToolPath — relative paths", () => {
+	const prefixedRoots: ParsedRoot[] = [parseUri("s3://my-bucket/data")];
+	const rootOnlyRoots: ParsedRoot[] = [parseUri("s3://my-bucket")];
+
+	it("resolves bare filename against first root (no prefix)", () => {
+		const result = resolveToolPath(rootOnlyRoots, "config.json");
+		expect(result.root.bucket).toBe("my-bucket");
+		expect(result.key).toBe("config.json");
+	});
+
+	it("resolves bare filename against first root (with prefix)", () => {
+		const result = resolveToolPath(prefixedRoots, "config.json");
+		expect(result.key).toBe("data/config.json");
+	});
+
+	it("resolves subdirectory path", () => {
+		const result = resolveToolPath(prefixedRoots, "logs/app.log");
+		expect(result.key).toBe("data/logs/app.log");
+	});
+
+	it("strips leading slash (root-relative)", () => {
+		const result = resolveToolPath(prefixedRoots, "/config.json");
+		expect(result.key).toBe("data/config.json");
+	});
+
+	it("normalizes ./ prefix", () => {
+		const result = resolveToolPath(prefixedRoots, "./config.json");
+		expect(result.key).toBe("data/config.json");
+	});
+
+	it("allows .. that stays within prefix", () => {
+		const result = resolveToolPath(prefixedRoots, "logs/../config.json");
+		expect(result.key).toBe("data/config.json");
+	});
+
+	it("denies .. that escapes the root prefix", () => {
+		expect(() => resolveToolPath(prefixedRoots, "../../etc/passwd")).toThrow(
+			"Access denied: path is outside allowed roots",
+		);
+	});
+
+	it("full URI still works when roots have prefix", () => {
+		const result = resolveToolPath(
+			prefixedRoots,
+			"s3://my-bucket/data/config.json",
+		);
+		expect(result.key).toBe("data/config.json");
+	});
+});
+
 describe("toCacheKey", () => {
 	it("builds canonical URI from root and key", () => {
 		const root = parseUri("s3://my-bucket/prefix");

@@ -38,6 +38,10 @@ const server = createMcpServer({ vfs, roots });
 | `S3Provider`, `AzureProvider`, `GcsProvider`, `MemoryProvider`, `SqliteProvider` | Storage providers |
 | `parseUri`, `toCacheKey`, `resolveToolPath` | Path utilities |
 | `ShellContext`, `ShellCommandHandler` | Shell extension types |
+| `createTransport`, `isBun` | Transport factory + runtime detection |
+| `WebSocketServerTransport` | Bun-native WebSocket transport |
+| `inferContentType` | MIME type inference from file extension |
+| `ServerContext`, `VfsStat`, `CacheStore`, `Scope` | Core types |
 
 ## Custom Provider Example
 

@@ -1,0 +1,56 @@
+---
+description: Run format + typecheck, then git add -A and commit with a user-provided message
+---
+
+Commit all current changes after ensuring formatting and types are clean.
+
+## Steps
+
+1. Run `bun run format` to lint, auto-fix, and format. If it reports errors, stop and fix them before proceeding.
+
+2. Run `bun run typecheck` to verify TypeScript types. If it reports errors, stop and fix them before proceeding.
+
+3. **Safety review** — inspect every file that would be staged:
+
+   ```bash
+   git status --short
+   git diff --stat HEAD
+   ```
+
+   For each new or modified file, check for the following and take the corresponding action:
+
+   | Category | Examples | Action |
+   |---|---|---|
+   | **Secrets / credentials** | `.env`, `*.pem`, `*.key`, `*secret*`, `*token*`, API keys in source | **Stop immediately.** Tell the user which file and why. Do NOT proceed until resolved. |
+   | **Build / compiled artifacts** | `dist/`, `*.js.map`, `*.d.ts` (if generated), `bun.lockb` changes from a dirty install | Ask the user: "Should `<file>` be committed or gitignored?" |
+   | **OS / editor noise** | `.DS_Store`, `Thumbs.db`, `*.swp`, `.idea/`, `.vscode/` | Add to `.gitignore` automatically, inform the user, and continue. |
+   | **Large binaries / test fixtures** | Files >500 KB that are not explicitly expected assets | Ask the user whether to include or gitignore. |
+   | **Unintended scope creep** | Files in directories unrelated to the stated change | Ask the user: "Is `<file>` intentional for this commit?" |
+
+   If any **secret** is found, stop the entire workflow. Do not proceed to `git add`.
+
+   If you added anything to `.gitignore`, show the user the exact lines appended.
+
+4. Inspect the current changes to generate a commit message:
+
+   ```bash
+   git diff --stat HEAD
+   ```
+
+   Read the diff and write a **Conventional Commit** message:
+   - Subject line: `<type>(<optional scope>): <short imperative summary>` (≤72 chars)
+   - Valid types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `ci`
+   - Add a body paragraph if the change warrants more context (breaking changes, non-obvious rationale)
+   - Mark breaking changes with `BREAKING CHANGE:` in the body or `!` after the type
+
+   Present the generated message to the user and ask: **"Use this commit message? (yes / edit / cancel)"**
+
+5. If the user says **yes** — use the generated message as-is.  
+   If the user says **edit** — accept their revised message.  
+   If the user says **cancel** — stop without committing.
+
+6. Run `git add -A` to stage all changes.
+
+7. Run `git commit -m "<confirmed message>"`.
+
+8. Report the commit hash and the one-line summary from git's output.

@@ -53,7 +53,7 @@ cloud-fs-mcp memory mem://demo --enable-shell --seed-demo
 
 ## SQLite (Persistent Local)
 
-Persistent local storage using Bun's built-in `bun:sqlite`. Uses WAL mode.
+Persistent local storage using WAL mode. Dual-runtime: uses `bun:sqlite` on Bun, `better-sqlite3` on Node.js (install as peer dep: `npm install better-sqlite3`).
 
 ```bash
 cloud-fs-mcp sqlite sqlite://my-bucket --sqlite-db /tmp/cloud-fs.db --enable-shell

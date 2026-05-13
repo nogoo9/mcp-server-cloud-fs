@@ -39,6 +39,9 @@ features:
   - icon: 🏗️
     title: Production Ready
     details: Rate limiting, CORS, health checks, structured logging, DNS rebinding protection, and graceful shutdown.
+  - icon: 🖥️
+    title: Interactive TUI
+    details: 'cloud-fs — a terminal shell with cd navigation, tab completion, command history, and 19 built-in commands including jq.'
 ---
 
 ## Quick Demo

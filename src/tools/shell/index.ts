@@ -3,13 +3,14 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { resolveToolPath } from "../../path-utils.js";
 import type { ParsedRoot } from "../../providers/interface.js";
 import type { VirtualFS } from "../../vfs.js";
 import { parseCommand } from "./parser.js";
 import { COMMANDS } from "./registry.js";
+import { resolveShellPath } from "./resolve.js";
 import type { ShellContext } from "./types.js";
 
+export { resolveShellPath } from "./resolve.js";
 // Re-export types for programmatic consumers
 export type { ShellCommandHandler, ShellContext } from "./types.js";
 
@@ -58,9 +59,10 @@ export async function executeShell(
 	// Handle input redirection: read file content as initial stdin
 	let stdin: string | null = null;
 	if (pipeline.inputRedirect) {
-		const { root, key } = resolveToolPath(
+		const { root, key } = resolveShellPath(
 			ctx.roots,
 			pipeline.inputRedirect.path,
+			ctx.cwd,
 		);
 		const buf = await ctx.vfs.get(root, key);
 		stdin = buf.toString("utf8");
@@ -81,7 +83,7 @@ export async function executeShell(
 	// Handle output redirection
 	if (pipeline.outputRedirect) {
 		const redirect = pipeline.outputRedirect;
-		const { root, key } = resolveToolPath(ctx.roots, redirect.path);
+		const { root, key } = resolveShellPath(ctx.roots, redirect.path, ctx.cwd);
 
 		if (redirect.mode === "append") {
 			let existing = "";

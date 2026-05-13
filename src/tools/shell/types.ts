@@ -10,6 +10,8 @@ export interface ShellContext {
 	roots: ParsedRoot[];
 	/** Whether destructive commands (rm, mv) are allowed. */
 	enableDelete?: boolean | undefined;
+	/** Current working directory, relative to the root prefix. TUI-only. */
+	cwd?: string | undefined;
 }
 
 /**

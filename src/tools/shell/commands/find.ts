@@ -1,14 +1,16 @@
 // src/tools/shell/commands/find.ts
 
 import { minimatch } from "minimatch";
-import { resolveToolPath } from "../../../path-utils.js";
+import { resolveShellPath } from "../resolve.js";
 import type { ShellCommandHandler } from "../types.js";
 
 /**
- * find <path> [-name pattern] [-type f|d]
+ * find [path] [-name pattern] [-type f|d]
  *
- * Recursively list files under path. Optionally filter by glob pattern
- * or type (f=files, d=directories).
+ * Recursively list files under path. Defaults to the first root.
+ * Optionally filter by glob pattern or type (f=files, d=directories).
+ * Output is relative to the listing prefix so it can be piped back
+ * to other commands (cat, grep, etc.).
  */
 export const find: ShellCommandHandler = async (args, ctx, _stdin) => {
 	let namePattern: string | null = null;
@@ -32,40 +34,49 @@ export const find: ShellCommandHandler = async (args, ctx, _stdin) => {
 		}
 	}
 
-	if (paths.length === 0) {
-		throw new Error("find: missing path operand");
-	}
-
+	// Default to listing the first root if no path given
+	const searchPaths = paths.length > 0 ? paths : [null];
 	const output: string[] = [];
 
-	for (const path of paths) {
-		const { root, key } = resolveToolPath(ctx.roots, path);
-		const prefix = key ? `${key}/` : "";
-		const { objects, prefixes } = await ctx.vfs.list(root, prefix);
+	for (const path of searchPaths) {
+		let root = ctx.roots[0]!;
+		let listPrefix: string;
 
-		// Include directories
+		if (path !== null) {
+			const resolved = resolveShellPath(ctx.roots, path, ctx.cwd);
+			root = resolved.root;
+			listPrefix = resolved.key ? `${resolved.key}/` : "";
+		} else {
+			// No explicit path — search from cwd
+			const cwd = ctx.cwd ?? "";
+			const baseParts = [root.prefix, cwd].filter(Boolean).join("/");
+			listPrefix = baseParts ? `${baseParts}/` : "";
+		}
+
+		const { objects, prefixes } = await ctx.vfs.list(root, listPrefix);
+
+		// Directories
 		if (typeFilter !== "f") {
 			for (const p of prefixes) {
-				const name = p.endsWith("/") ? p.slice(0, -1) : p;
-				const basename = name.includes("/")
-					? name.slice(name.lastIndexOf("/") + 1)
-					: name;
+				const rel = p.startsWith(listPrefix) ? p.slice(listPrefix.length) : p;
+				const basename = rel.replace(/\/$/, "").split("/").pop()!;
 				if (namePattern && !minimatch(basename, namePattern, { dot: true }))
 					continue;
-				output.push(`${root.scheme}://${root.bucket}/${p}`);
+				output.push(`${rel.replace(/\/$/, "")}/`);
 			}
 		}
 
-		// Include files
+		// Files
 		if (typeFilter !== "d") {
 			for (const obj of objects) {
 				if (obj.key.endsWith("/")) continue;
-				const basename = obj.key.includes("/")
-					? obj.key.slice(obj.key.lastIndexOf("/") + 1)
+				const rel = obj.key.startsWith(listPrefix)
+					? obj.key.slice(listPrefix.length)
 					: obj.key;
+				const basename = rel.split("/").pop()!;
 				if (namePattern && !minimatch(basename, namePattern, { dot: true }))
 					continue;
-				output.push(`${root.scheme}://${root.bucket}/${obj.key}`);
+				output.push(rel);
 			}
 		}
 	}
