@@ -21,7 +21,7 @@ import { touch } from "./shell/commands/touch.js";
 import { wc } from "./shell/commands/wc.js";
 // Integration
 import { executeShell } from "./shell/index.js";
-import { parseCommand, tokenize } from "./shell/parser.js";
+import { parseCommand, parseCommandList, tokenize } from "./shell/parser.js";
 import type { ShellContext } from "./shell/types.js";
 
 const ROOT: ParsedRoot = {
@@ -139,6 +139,64 @@ describe("parseCommand", () => {
 
 	test("throws on empty command before pipe", () => {
 		expect(() => parseCommand("| grep test")).toThrow("empty command");
+	});
+});
+
+describe("parseCommandList", () => {
+	test("single pipeline treated as list of one with null operator", () => {
+		const list = parseCommandList("ls s3://bucket");
+		expect(list).toHaveLength(1);
+		expect(list[0]!.pipeline.stages[0]!.command).toBe("ls");
+		expect(list[0]!.operator).toBeNull();
+	});
+
+	test("&& splits into two entries", () => {
+		const list = parseCommandList("echo a && echo b");
+		expect(list).toHaveLength(2);
+		expect(list[0]!.pipeline.stages[0]!.command).toBe("echo");
+		expect(list[0]!.operator).toBe("&&");
+		expect(list[1]!.pipeline.stages[0]!.command).toBe("echo");
+		expect(list[1]!.operator).toBeNull();
+	});
+
+	test("|| splits into two entries", () => {
+		const list = parseCommandList("echo a || echo b");
+		expect(list).toHaveLength(2);
+		expect(list[0]!.operator).toBe("||");
+		expect(list[1]!.operator).toBeNull();
+	});
+
+	test("; splits into two entries", () => {
+		const list = parseCommandList("echo a ; echo b");
+		expect(list).toHaveLength(2);
+		expect(list[0]!.operator).toBe(";");
+	});
+
+	test("three entries with mixed operators", () => {
+		const list = parseCommandList("echo a && echo b || echo c");
+		expect(list).toHaveLength(3);
+		expect(list[0]!.operator).toBe("&&");
+		expect(list[1]!.operator).toBe("||");
+		expect(list[2]!.operator).toBeNull();
+	});
+
+	test("pipeline inside each entry is preserved", () => {
+		const list = parseCommandList("cat s3://b/f | grep x && echo done");
+		expect(list).toHaveLength(2);
+		expect(list[0]!.pipeline.stages).toHaveLength(2);
+		expect(list[0]!.pipeline.stages[0]!.command).toBe("cat");
+		expect(list[0]!.pipeline.stages[1]!.command).toBe("grep");
+		expect(list[1]!.pipeline.stages[0]!.command).toBe("echo");
+	});
+
+	test("&& inside double-quoted string is not treated as operator", () => {
+		const list = parseCommandList('echo "a&&b"');
+		expect(list).toHaveLength(1);
+		expect(list[0]!.pipeline.stages[0]!.args[0]).toBe("a&&b");
+	});
+
+	test("throws on trailing &&", () => {
+		expect(() => parseCommandList("echo a &&")).toThrow();
 	});
 });
 
@@ -471,5 +529,67 @@ describe("executeShell", () => {
 		await expect(
 			executeShell("cat s3://other-bucket/secret", ctx),
 		).rejects.toThrow("Access denied");
+	});
+});
+
+// ── Command list operator tests ────────────────────────────────────────────
+
+describe("executeShell — command list operators", () => {
+	test("&& runs both commands on success", async () => {
+		const ctx = makeCtx();
+		const result = await executeShell("echo a && echo b", ctx);
+		expect(result).toBe("a\nb");
+	});
+
+	test("&& skips second command on first failure", async () => {
+		const ctx = makeCtx();
+		await expect(
+			executeShell("nonexistent s3://test-bucket/f && echo b", ctx),
+		).rejects.toThrow("command not found");
+	});
+
+	test("|| skips second command when first succeeds", async () => {
+		const ctx = makeCtx();
+		const result = await executeShell("echo ok || echo skip", ctx);
+		expect(result).toBe("ok");
+	});
+
+	test("|| runs second command when first fails", async () => {
+		const ctx = makeCtx();
+		const result = await executeShell(
+			"nonexistent s3://test-bucket/f || echo fallback",
+			ctx,
+		);
+		expect(result).toBe("fallback");
+	});
+
+	test("; always runs both commands regardless of first result", async () => {
+		const ctx = makeCtx();
+		const result = await executeShell("echo x ; echo y", ctx);
+		expect(result).toBe("x\ny");
+	});
+
+	test("; continues after a failing command", async () => {
+		const ctx = makeCtx();
+		const result = await executeShell(
+			"nonexistent s3://test-bucket/f ; echo continued",
+			ctx,
+		);
+		expect(result).toBe("continued");
+	});
+
+	test("three commands: a && b && c", async () => {
+		const ctx = makeCtx();
+		const result = await executeShell("echo a && echo b && echo c", ctx);
+		expect(result).toBe("a\nb\nc");
+	});
+
+	test("mixed: pipeline then &&", async () => {
+		const ctx = makeCtx({ content: "foo\nbar" });
+		const result = await executeShell(
+			"cat s3://test-bucket/file.txt | grep foo && echo found",
+			ctx,
+		);
+		expect(result).toBe("foo\nfound");
 	});
 });

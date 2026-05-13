@@ -63,7 +63,21 @@ npx -p @nogoo9/mcp-server-cloud-fs cloud-fs s3 s3://my-bucket
 npx -p @nogoo9/mcp-server-cloud-fs cloud-fs memory mem://demo --seed-demo
 ```
 
-Features: `cd` navigation with dynamic prompt, tab completion, command history, relative paths, 19 built-in commands including `jq`, and pipes/redirects.
+Features: `cd` navigation with dynamic prompt, tab completion, command history, relative paths, 19 built-in commands including `jq`, and pipes/redirects. See the [Interactive Shell guide](/guide/shell) for more details.
+
+### AI Agent Skill
+
+Give your assistant native fluency with cloud storage by installing the `cloud-fs` skill:
+
+```bash
+# Claude Code
+claude mcp add-skill nogoo9/mcp-server-cloud-fs
+
+# Gemini CLI
+npx skills add nogoo9/mcp-server-cloud-fs
+```
+
+The skill teaches assistants how to map high-level intents to MCP tools and provides a guided setup flow. See the [AI Agent Skill guide](/guide/ai-skill) for more details.
 
 ## MCP Client Configuration
 

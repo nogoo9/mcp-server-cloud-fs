@@ -42,6 +42,9 @@ features:
   - icon: 🖥️
     title: Interactive TUI
     details: 'cloud-fs — a terminal shell with cd navigation, tab completion, command history, and 19 built-in commands including jq.'
+  - icon: 🤖
+    title: AI Agent Skill
+    details: 'Installable skill for Claude Code and Gemini CLI that teaches assistants how to use cloud storage as a POSIX filesystem.'
 ---
 
 ## Quick Demo

@@ -33,13 +33,16 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--auth-client-credentials` | `false` | Enable Client Credentials ext-auth flow |
 | `--auth-enterprise-idp <url>` | — | Enable Enterprise-Managed Authorization |
 
-## Production
+## Production & Hardening
 
 | Flag | Default | Description |
 |---|---|---|
 | `--cors-origin <origin>` | — | Allowed CORS origin (repeatable) |
 | `--rate-limit <req/min>` | `0` (off) | Rate limit per client |
 | `--rate-limit-burst <n>` | `10` | Burst allowance |
+| `--security-headers` | `false` | Enable [nosecone](https://github.com/arcjet/arcjet-js/tree/main/nosecone) security headers |
+| `--security-headers-config <json>` | — | Custom security headers configuration (JSON) |
+| `--security-headers-config-file <path>` | — | Path to security headers configuration file |
 | `--request-logging` | `false` | Enable structured JSON request logging |
 
 ## Storage & Cache
@@ -57,6 +60,21 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--sqlite-db <path>` | — | SQLite database file path |
 | `--ca-file <path>` | — | PEM CA bundle for TLS verification (S3-compatible endpoints + Redis) |
 
+## Interactive Shell (`cloud-fs`)
+
+The interactive shell is a separate binary that provides a POSIX-like terminal for cloud storage.
+
+```bash
+cloud-fs <provider> <root-uri> [options]
+```
+
+It supports all the same **Storage & Cache** and **TLS** flags as `cloud-fs-mcp`.
+
+| Flag | Default | Description |
+|---|---|---|
+| `--seed-demo` | `false` | Seed VFS with sample files (demo only) |
+| `--no-history` | `false` | Disable persistent command history |
+
 ## Tools
 
 | Flag | Default | Description |
@@ -64,7 +82,6 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--enable-delete` | `false` | Enable the `delete_file` tool |
 | `--enable-shell` | `false` | Enable the `shell` tool |
 | `--grep-max-objects <n>` | `1000` | Max objects `grep_files` scans per call |
-| `--seed-demo` | `false` | Seed VFS with sample files for demo |
 
 ## TLS & Custom CA
 

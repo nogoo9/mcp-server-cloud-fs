@@ -27,11 +27,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/public/images/cloud-fs-demo.gif" alt="cloud-fs interactive shell demo" width="700" />
+  <img src="docs/public/images/cloud-fs-claude-demo.svg" alt="cloud-fs in Claude Code" width="700" />
 </p>
 
 <p align="center">
-  <img src="docs/public/images/cloud-fs-claude-demo.svg" alt="cloud-fs AI agent skill demo" width="700" />
+  <img src="docs/public/images/cloud-fs-cli-demo.svg" alt="cloud-fs interactive shell" width="700" />
 </p>
 
 **Providers:** Amazon S3 · Azure Blob Storage · Google Cloud Storage · MinIO · RustFS · Cloudflare R2 · Backblaze B2 · Wasabi · LocalStack · SQLite · In-Memory
@@ -114,6 +114,10 @@ bunx @nogoo9/mcp-server-cloud-fs memory mem://demo --enable-shell --seed-demo
 ---
 
 ## Interactive Shell (`cloud-fs`)
+
+<p align="center">
+  <img src="docs/public/images/cloud-fs-cli-demo.svg" alt="cloud-fs interactive shell demo" width="700" />
+</p>
 
 Drop into an interactive terminal for exploring and managing cloud storage — no MCP client needed:
 

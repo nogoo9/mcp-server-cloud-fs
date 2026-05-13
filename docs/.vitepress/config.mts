@@ -51,6 +51,8 @@ export default defineConfig({
 					text: "Guide",
 					items: [
 						{ text: "Getting Started", link: "/guide/getting-started" },
+						{ text: "Interactive Shell", link: "/guide/shell" },
+						{ text: "AI Agent Skill", link: "/guide/ai-skill" },
 						{ text: "Transports", link: "/guide/transports" },
 						{ text: "Authentication", link: "/guide/authentication" },
 						{ text: "Production Features", link: "/guide/production" },

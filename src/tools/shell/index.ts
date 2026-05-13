@@ -5,7 +5,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { ParsedRoot } from "../../providers/interface.js";
 import type { VirtualFS } from "../../vfs.js";
-import { parseCommand } from "./parser.js";
+import { parseCommandList } from "./parser.js";
 import { COMMANDS } from "./registry.js";
 import { resolveShellPath } from "./resolve.js";
 import type { ShellContext } from "./types.js";
@@ -56,8 +56,51 @@ export async function executeShell(
 	command: string,
 	ctx: ShellContext,
 ): Promise<string> {
-	const pipeline = parseCommand(command);
+	const list = parseCommandList(command.trim());
+	const outputs: string[] = [];
+	let lastFailed = false;
 
+	for (let i = 0; i < list.length; i++) {
+		const entry = list[i]!;
+		const prevOperator = i > 0 ? list[i - 1]!.operator : null;
+
+		// Decide whether to skip based on the previous operator
+		if (prevOperator === "&&" && lastFailed) {
+			// AND-chain failed — propagate the error at the end
+			break;
+		}
+		if (prevOperator === "||" && !lastFailed) {
+			// OR-chain succeeded — skip the fallback
+			continue;
+		}
+
+		try {
+			const out = await executePipeline(entry.pipeline, ctx);
+			if (out) outputs.push(out);
+			lastFailed = false;
+		} catch (e) {
+			lastFailed = true;
+			// ; always continues; && and || need to look at the next entry.
+			// If this is the last entry (or next is &&), re-throw so the caller sees the error.
+			const nextOperator = entry.operator;
+			if (nextOperator === null || nextOperator === "&&") {
+				throw e;
+			}
+			// For ||: swallow and let the next entry run as the fallback.
+		}
+	}
+
+	return outputs.join("\n");
+}
+
+/**
+ * Execute a single {@link ParsedPipeline} and return its stdout string.
+ * Handles input redirection, the pipe chain, and output redirection.
+ */
+async function executePipeline(
+	pipeline: import("./parser.js").ParsedPipeline,
+	ctx: ShellContext,
+): Promise<string> {
 	// Handle input redirection: read file content as initial stdin
 	let stdin: string | null = null;
 	if (pipeline.inputRedirect) {
@@ -138,7 +181,8 @@ export function registerShellTool(server: McpServer, ctx: Ctx): void {
 		{
 			description:
 				"Execute POSIX-like shell commands against the cloud filesystem. " +
-				"Supports pipes (|), input redirection (<), and output redirection (>, >>). " +
+				"Supports pipes (|), input redirection (<), output redirection (>, >>), " +
+				"and command list operators (&& for AND-chaining, || for OR-fallback, ; for sequencing). " +
 				"All paths must be cloud URIs (e.g. s3://bucket/key). " +
 				"No real shell is spawned — commands run in-process against the VFS. " +
 				`Supported commands: ${supportedCmds}. ` +
