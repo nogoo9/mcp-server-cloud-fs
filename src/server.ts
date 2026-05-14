@@ -3,6 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AuditLogger } from "./middleware/audit.js";
 import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
+import { registerResources } from "./resources/index.js";
 import { registerDirectoryTools } from "./tools/directory.js";
 import { registerExtendedTools } from "./tools/extended.js";
 import { registerInfoTools } from "./tools/info.js";
@@ -216,6 +217,9 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	registerPresignedTools(server, ctx);
 	registerMetadataTools(server, ctx);
 	registerVersioningTools(server, ctx);
+
+	// Read-only MCP Resources for client-side browsing
+	registerResources(server, ctx);
 
 	if (ctx.enableShell) {
 		registerShellTool(server, ctx);
