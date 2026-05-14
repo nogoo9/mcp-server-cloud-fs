@@ -11,6 +11,7 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | `read_media_file` | `path` | Read image/media as base64 MCP image content block. |
 | `read_multiple_files` | `paths` | Read several files in parallel. |
 | `read_file_range` ✨ | `path`, `offset`, `limit` | Read a 1-based line range with total line count header. |
+| `read_file_chunk` ✨ | `path`, `start_byte`, `end_byte?`, `encoding?` | Read a byte range without downloading the entire file. Max 10MB. |
 
 ## Write Tools
 
@@ -52,6 +53,19 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | `list_allowed_directories` | _(none)_ | List configured root URIs. |
 
 > ✨ = Extended tool (not in standard mcp-server-filesystem)
+
+## Cloud-Native Tools ☁️
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `get_presigned_url` ☁️ | `path`, `operation?`, `expires_in?` | Generate a temporary access URL (default: GET, 1 hour). |
+| `get_object_metadata` ☁️ | `path` | Get size, content type, last modified, custom metadata, and tags. |
+| `set_object_tags` ☁️ | `path`, `tags` | Replace object tags with key-value pairs. |
+| `search_by_tag` ☁️ | `path`, `tags`, `recursive?` | Find objects matching tag filters (AND logic). |
+| `list_versions` ☁️ | `path`, `max_results?`, `page_token?` | List version history with timestamps, sizes, and markers. |
+| `restore_version` ☁️ | `path`, `version_id` | Restore a previous object version (copies over current). |
+
+> ☁️ = Cloud-native tool (requires provider support)
 
 ## Shell Tool ⚡
 

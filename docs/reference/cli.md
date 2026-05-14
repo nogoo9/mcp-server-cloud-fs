@@ -44,6 +44,8 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--security-headers-config <json>` | — | Custom security headers configuration (JSON) |
 | `--security-headers-config-file <path>` | — | Path to security headers configuration file |
 | `--request-logging` | `false` | Enable structured JSON request logging |
+| `--audit-log` | `false` | Enable structured tool invocation audit logging to stderr |
+| `--audit-log-file <path>` | — | Write audit log entries to a file (implies `--audit-log`) |
 
 ## Storage & Cache
 
