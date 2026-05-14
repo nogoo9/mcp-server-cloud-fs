@@ -659,6 +659,7 @@ async function main(): Promise<void> {
 	const server = await createMcpServer({
 		vfs,
 		roots,
+		provider,
 		enableDelete: args.enableDelete,
 		grepMaxObjects: args.grepMaxObjects,
 		enableShell: args.enableShell,

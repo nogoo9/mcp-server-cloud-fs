@@ -45,6 +45,8 @@ const TOOL_SCOPE_MAP: Record<string, Scope> = {
 	// Info tools
 	get_file_info: SCOPES.READ,
 	list_allowed_directories: SCOPES.READ,
+	// Presigned URL tools
+	get_presigned_url: SCOPES.READ,
 	// Shell tool
 	shell: SCOPES.SHELL,
 	shell_app: SCOPES.SHELL,

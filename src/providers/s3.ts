@@ -187,6 +187,22 @@ export class S3Provider implements StorageProvider {
 			}),
 		);
 	}
+
+	async getPresignedUrl(
+		root: ParsedRoot,
+		key: string,
+		opts: { expiresIn: number; operation: "get" | "put" },
+	): Promise<string> {
+		// Dynamic import to avoid hard dependency for users who don't need presigning
+		const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+		const command =
+			opts.operation === "put"
+				? new PutObjectCommand({ Bucket: root.bucket, Key: key })
+				: new GetObjectCommand({ Bucket: root.bucket, Key: key });
+		return getSignedUrl(this.client, command, {
+			expiresIn: opts.expiresIn,
+		});
+	}
 }
 
 async function streamToBuffer(

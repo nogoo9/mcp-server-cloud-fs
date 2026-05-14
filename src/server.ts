@@ -1,10 +1,11 @@
 // src/server.ts
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ParsedRoot } from "./providers/interface.js";
+import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
 import { registerDirectoryTools } from "./tools/directory.js";
 import { registerExtendedTools } from "./tools/extended.js";
 import { registerInfoTools } from "./tools/info.js";
 import { registerMoveTools } from "./tools/move.js";
+import { registerPresignedTools } from "./tools/presigned.js";
 import { registerReadTools } from "./tools/read.js";
 import { registerSearchTools } from "./tools/search.js";
 import { registerShellTool } from "./tools/shell/index.js";
@@ -22,6 +23,8 @@ import type { VirtualFS } from "./vfs.js";
 export interface ServerContext {
 	vfs: VirtualFS;
 	roots: ParsedRoot[];
+	/** The underlying StorageProvider, used for provider-specific features (e.g. presigned URLs). */
+	provider: StorageProvider;
 	/** Enable the delete_file tool. Default: false. */
 	enableDelete?: boolean;
 	/** Maximum number of objects grep_files will scan per call. Default: 1000. */
@@ -166,6 +169,7 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	registerSearchTools(server, ctx);
 	registerInfoTools(server, ctx);
 	registerExtendedTools(server, ctx);
+	registerPresignedTools(server, ctx);
 
 	if (ctx.enableShell) {
 		registerShellTool(server, ctx);

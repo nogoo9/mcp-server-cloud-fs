@@ -71,4 +71,19 @@ export interface StorageProvider {
 		delimiter?: string,
 	): Promise<ListResult>;
 	createPrefix(root: ParsedRoot, prefix: string): Promise<void>;
+
+	/**
+	 * Generate a presigned URL for temporary access to an object.
+	 * Not all providers support this — check before calling.
+	 */
+	getPresignedUrl?(
+		root: ParsedRoot,
+		key: string,
+		opts: {
+			/** URL validity in seconds. */
+			expiresIn: number;
+			/** 'get' for download, 'put' for upload. */
+			operation: "get" | "put";
+		},
+	): Promise<string>;
 }
