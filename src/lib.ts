@@ -44,6 +44,9 @@ export type { CacheStore } from "./cache/interface.js";
 export { MemoryStore } from "./cache/memory.js";
 export { PassThroughCache } from "./cache/passthrough.js";
 export { createRedisStore } from "./cache/redis.js";
+// Errors
+export type { CloudErrorCodeValue } from "./errors.js";
+export { CloudError, CloudErrorCode } from "./errors.js";
 export type { RateLimiter, RateLimitResult } from "./middleware/rate-limit.js";
 // Middleware (v0.4.0)
 export {

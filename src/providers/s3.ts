@@ -13,6 +13,7 @@ import {
 	S3Client,
 } from "@aws-sdk/client-s3";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
+import { mapS3Error } from "../errors.js";
 import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
@@ -87,13 +88,7 @@ export class S3Provider implements StorageProvider {
 				}),
 			);
 		} catch (err: unknown) {
-			const code = (err as { name?: string }).name;
-			if (code === "NoSuchKey" || code === "NotFound") {
-				throw new Error(
-					`File not found: ${root.scheme}://${root.bucket}/${key}`,
-				);
-			}
-			throw err;
+			mapS3Error(err, root.bucket, key);
 		}
 		return streamToBuffer(resp.Body as AsyncIterable<Uint8Array>);
 	}

@@ -1,5 +1,7 @@
 // src/providers/gcs.ts
+
 import { type SaveOptions, Storage } from "@google-cloud/storage";
+import { mapGcsError } from "../errors.js";
 import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
@@ -66,12 +68,7 @@ export class GcsProvider implements StorageProvider {
 			}
 			return content;
 		} catch (err: unknown) {
-			const code = (err as { code?: number }).code;
-			if (code === 404)
-				throw new Error(
-					`File not found: ${root.scheme}://${root.bucket}/${key}`,
-				);
-			throw err;
+			mapGcsError(err, root.bucket, key);
 		}
 	}
 

@@ -1,9 +1,11 @@
 // src/providers/azure.ts
+
 import {
 	BlobServiceClient,
 	type BlockBlobUploadOptions,
 	StorageSharedKeyCredential,
 } from "@azure/storage-blob";
+import { mapAzureError } from "../errors.js";
 import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
@@ -80,12 +82,7 @@ export class AzureProvider implements StorageProvider {
 				);
 			return streamToBuffer(stream as unknown as AsyncIterable<Uint8Array>);
 		} catch (err: unknown) {
-			const status = (err as { statusCode?: number }).statusCode;
-			if (status === 404)
-				throw new Error(
-					`File not found: ${root.scheme}://${root.bucket}/${key}`,
-				);
-			throw err;
+			mapAzureError(err, root.bucket, key);
 		}
 	}
 
