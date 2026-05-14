@@ -49,10 +49,29 @@ export class AzureProvider implements StorageProvider {
 				`https://${opts.accountName}.blob.core.windows.net`,
 				cred,
 			);
+		} else if (opts.accountName) {
+			// Managed Identity / OIDC / DefaultAzureCredential fallback.
+			// Requires @azure/identity as an optional peer dependency.
+			// biome-ignore lint/suspicious/noExplicitAny: dynamic optional dependency
+			let DefaultAzureCredential: any;
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: dynamic optional dependency
+				DefaultAzureCredential = (require("@azure/identity") as any)
+					.DefaultAzureCredential;
+			} catch {
+				throw new Error(
+					"AzureProvider: @azure/identity is required for Managed Identity / OIDC auth. " +
+						"Install it with: npm install @azure/identity",
+				);
+			}
+			this.client = new BlobServiceClient(
+				`https://${opts.accountName}.blob.core.windows.net`,
+				new DefaultAzureCredential(),
+			);
 		} else {
 			throw new Error(
-				"AzureProvider requires either connectionString or both accountName and accountKey. " +
-					"For DefaultAzureCredential, set AZURE_STORAGE_CONNECTION_STRING.",
+				"AzureProvider requires connectionString, accountName + accountKey, " +
+					"or accountName alone (for DefaultAzureCredential / Managed Identity).",
 			);
 		}
 		this.defaultUploadOptions = opts.uploadOptions ?? {};

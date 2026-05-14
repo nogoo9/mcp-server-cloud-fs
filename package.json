@@ -98,7 +98,8 @@
   "peerDependencies": {
     "ioredis": "",
     "better-sqlite3": "",
-    "nosecone": ""
+    "nosecone": "",
+    "@azure/identity": ""
   },
   "peerDependenciesMeta": {
     "ioredis": {
@@ -108,6 +109,9 @@
       "optional": true
     },
     "nosecone": {
+      "optional": true
+    },
+    "@azure/identity": {
       "optional": true
     }
   },

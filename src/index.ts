@@ -682,6 +682,16 @@ async function main(): Promise<void> {
 		auditLogger = new AuditLogger(sink);
 	}
 
+	// Startup credential validation — verify provider can authenticate
+	const { checkHealth, formatHealthReport } = await import("./health.js");
+	for (const root of roots) {
+		const report = await checkHealth(provider, root);
+		if (!report.readable) {
+			process.stderr.write(`\n${formatHealthReport(report)}\n`);
+			process.exit(1);
+		}
+	}
+
 	const server = await createMcpServer({
 		vfs,
 		roots,
