@@ -5,6 +5,7 @@ import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
 	ObjectInfo,
+	ObjectMetadata,
 	ParsedRoot,
 	StorageProvider,
 } from "./interface.js";
@@ -139,5 +140,41 @@ export class MemoryProvider implements StorageProvider {
 	async createPrefix(root: ParsedRoot, prefix: string): Promise<void> {
 		const key = prefix.endsWith("/") ? prefix : `${prefix}/`;
 		await this.putObject(root, key, Buffer.alloc(0));
+	}
+
+	// -- Metadata & Tags --
+
+	private readonly tags = new Map<string, Record<string, string>>();
+
+	async getObjectMetadata(
+		root: ParsedRoot,
+		key: string,
+	): Promise<ObjectMetadata> {
+		const info = await this.headObject(root, key);
+		const sk = this.storeKey(root, key);
+		return {
+			...info,
+			metadata: info.contentType ? { "content-type": info.contentType } : {},
+			tags: this.tags.get(sk) ?? {},
+		};
+	}
+
+	async setObjectTags(
+		root: ParsedRoot,
+		key: string,
+		tagValues: Record<string, string>,
+	): Promise<void> {
+		// Verify the object exists
+		await this.headObject(root, key);
+		this.tags.set(this.storeKey(root, key), { ...tagValues });
+	}
+
+	async getObjectTags(
+		root: ParsedRoot,
+		key: string,
+	): Promise<Record<string, string>> {
+		// Verify the object exists
+		await this.headObject(root, key);
+		return this.tags.get(this.storeKey(root, key)) ?? {};
 	}
 }

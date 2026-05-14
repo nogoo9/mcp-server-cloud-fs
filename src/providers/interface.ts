@@ -86,4 +86,32 @@ export interface StorageProvider {
 			operation: "get" | "put";
 		},
 	): Promise<string>;
+
+	/** Get extended metadata and tags for an object. */
+	getObjectMetadata?(root: ParsedRoot, key: string): Promise<ObjectMetadata>;
+
+	/** Set tags on an object. Replaces all existing tags. */
+	setObjectTags?(
+		root: ParsedRoot,
+		key: string,
+		tags: Record<string, string>,
+	): Promise<void>;
+
+	/** Get tags for an object. */
+	getObjectTags?(
+		root: ParsedRoot,
+		key: string,
+	): Promise<Record<string, string>>;
+}
+
+/**
+ * Extended metadata for a cloud object, including custom headers and tags.
+ *
+ * @category Providers
+ */
+export interface ObjectMetadata extends ObjectInfo {
+	/** Custom metadata headers (e.g. x-amz-meta-*). */
+	metadata: Record<string, string>;
+	/** Object tags (key-value pairs for classification). */
+	tags: Record<string, string>;
 }
