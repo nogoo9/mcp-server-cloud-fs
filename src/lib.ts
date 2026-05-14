@@ -47,6 +47,9 @@ export { createRedisStore } from "./cache/redis.js";
 // Errors
 export type { CloudErrorCodeValue } from "./errors.js";
 export { CloudError, CloudErrorCode } from "./errors.js";
+// Health
+export type { HealthCheckResult, HealthReport } from "./health.js";
+export { checkHealth, formatHealthReport } from "./health.js";
 // Middleware
 export type { AuditEntry, AuditSink } from "./middleware/audit.js";
 export {
