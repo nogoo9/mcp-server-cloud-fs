@@ -102,6 +102,16 @@ export interface StorageProvider {
 		root: ParsedRoot,
 		key: string,
 	): Promise<Record<string, string>>;
+
+	/** List version history for an object. */
+	listObjectVersions?(root: ParsedRoot, key: string): Promise<ObjectVersion[]>;
+
+	/** Restore a previous version of an object (copies it over current). */
+	restoreObjectVersion?(
+		root: ParsedRoot,
+		key: string,
+		versionId: string,
+	): Promise<void>;
 }
 
 /**
@@ -114,4 +124,22 @@ export interface ObjectMetadata extends ObjectInfo {
 	metadata: Record<string, string>;
 	/** Object tags (key-value pairs for classification). */
 	tags: Record<string, string>;
+}
+
+/**
+ * A single version entry for a versioned object.
+ *
+ * @category Providers
+ */
+export interface ObjectVersion {
+	/** Provider-specific version identifier. */
+	versionId: string;
+	/** When this version was created. */
+	lastModified: Date;
+	/** Size of this version in bytes. */
+	size: number;
+	/** Whether this is the current/latest version. */
+	isLatest: boolean;
+	/** Whether this version is a delete marker (S3-specific). */
+	isDeleteMarker?: boolean;
 }

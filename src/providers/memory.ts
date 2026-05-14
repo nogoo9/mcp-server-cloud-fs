@@ -6,6 +6,7 @@ import type {
 	ListResult,
 	ObjectInfo,
 	ObjectMetadata,
+	ObjectVersion,
 	ParsedRoot,
 	StorageProvider,
 } from "./interface.js";
@@ -58,11 +59,13 @@ export class MemoryProvider implements StorageProvider {
 		key: string,
 		content: Buffer,
 	): Promise<void> {
-		this.store.set(this.storeKey(root, key), {
+		const sk = this.storeKey(root, key);
+		this.store.set(sk, {
 			content,
 			contentType: await inferContentType(key, content),
 			lastModified: new Date(),
 		});
+		this.pushVersion(sk, content);
 	}
 
 	async deleteObject(root: ParsedRoot, key: string): Promise<void> {
@@ -176,5 +179,52 @@ export class MemoryProvider implements StorageProvider {
 		// Verify the object exists
 		await this.headObject(root, key);
 		return this.tags.get(this.storeKey(root, key)) ?? {};
+	}
+
+	// -- Versioning --
+
+	private readonly versions = new Map<
+		string,
+		{ versionId: string; content: Buffer; lastModified: Date }[]
+	>();
+
+	private pushVersion(sk: string, content: Buffer): void {
+		const list = this.versions.get(sk) ?? [];
+		list.push({
+			versionId: `v${list.length + 1}`,
+			content: Buffer.from(content),
+			lastModified: new Date(),
+		});
+		this.versions.set(sk, list);
+	}
+
+	async listObjectVersions(
+		root: ParsedRoot,
+		key: string,
+	): Promise<ObjectVersion[]> {
+		await this.headObject(root, key); // verify existence
+		const sk = this.storeKey(root, key);
+		const list = this.versions.get(sk) ?? [];
+		return list.map((v, i) => ({
+			versionId: v.versionId,
+			lastModified: v.lastModified,
+			size: v.content.length,
+			isLatest: i === list.length - 1,
+		}));
+	}
+
+	async restoreObjectVersion(
+		root: ParsedRoot,
+		key: string,
+		versionId: string,
+	): Promise<void> {
+		const sk = this.storeKey(root, key);
+		const list = this.versions.get(sk) ?? [];
+		const version = list.find((v) => v.versionId === versionId);
+		if (!version) {
+			throw new Error(`Version '${versionId}' not found for ${key}`);
+		}
+		// Overwrite current content (this also pushes a new version)
+		await this.putObject(root, key, Buffer.from(version.content));
 	}
 }

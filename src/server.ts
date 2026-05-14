@@ -12,6 +12,7 @@ import { registerPresignedTools } from "./tools/presigned.js";
 import { registerReadTools } from "./tools/read.js";
 import { registerSearchTools } from "./tools/search.js";
 import { registerShellTool } from "./tools/shell/index.js";
+import { registerVersioningTools } from "./tools/versioning.js";
 import { registerWriteTools } from "./tools/write.js";
 import type { VirtualFS } from "./vfs.js";
 
@@ -214,6 +215,7 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	registerExtendedTools(server, ctx);
 	registerPresignedTools(server, ctx);
 	registerMetadataTools(server, ctx);
+	registerVersioningTools(server, ctx);
 
 	if (ctx.enableShell) {
 		registerShellTool(server, ctx);

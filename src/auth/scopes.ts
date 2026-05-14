@@ -51,6 +51,9 @@ const TOOL_SCOPE_MAP: Record<string, Scope> = {
 	get_object_metadata: SCOPES.READ,
 	set_object_tags: SCOPES.WRITE,
 	search_by_tag: SCOPES.SEARCH,
+	// Versioning tools
+	list_versions: SCOPES.READ,
+	restore_version: SCOPES.WRITE,
 	// Shell tool
 	shell: SCOPES.SHELL,
 	shell_app: SCOPES.SHELL,
