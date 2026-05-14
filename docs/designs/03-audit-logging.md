@@ -1,5 +1,10 @@
 # Audit Logging for Tool Invocations
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#13](https://github.com/nogoo9/mcp-server-cloud-fs/issues/13)
+> **Commit:** [`56a967d`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/56a967d) — `feat(audit): add structured tool invocation audit logging`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 Enterprise environments require visibility into **what the LLM did** with cloud storage access. Currently, there is no structured audit trail of which tools were called, what resources were accessed, or what data was modified. The existing `--request-logging` flag logs HTTP requests but not MCP tool-level semantics.
@@ -94,10 +99,10 @@ function wrapToolHandler(
 
 ## Acceptance Criteria
 
-- [ ] `--audit-log` emits structured JSON to stderr for every tool call
-- [ ] `--audit-log-file` writes to a file instead
-- [ ] Logs include tool name, resource URI, duration, success/error
-- [ ] Large content bodies are NOT logged (sanitized)
-- [ ] Shell tool commands are logged with the command string
-- [ ] Audit logging has negligible performance overhead
-- [ ] Unit tests verify log format and sanitization
+- [x] `--audit-log` emits structured JSON to stderr for every tool call
+- [x] `--audit-log-file` writes to a file instead
+- [x] Logs include tool name, resource URI, duration, success/error
+- [x] Large content bodies are NOT logged (sanitized)
+- [x] Shell tool commands are logged with the command string
+- [x] Audit logging has negligible performance overhead
+- [x] Unit tests verify log format and sanitization

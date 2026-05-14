@@ -1,5 +1,10 @@
 # Object Versioning Tools (`list_versions`, `restore_version`)
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#16](https://github.com/nogoo9/mcp-server-cloud-fs/issues/16)
+> **Commit:** [`75f45aa`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/75f45aa) — `feat(tools): add object versioning tools`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 Cloud object stores with versioning maintain complete history. AI agents that write files need the ability to undo mistakes. Currently, no MCP tool exposes versioning.
@@ -61,9 +66,9 @@ Add optional `listObjectVersions?()` and `restoreObjectVersion?()` to `StoragePr
 
 ## Acceptance Criteria
 
-- [ ] `list_versions` returns version history for S3 objects
-- [ ] `restore_version` restores a previous version
-- [ ] VFS cache properly invalidated after restore
-- [ ] Non-versioned buckets return clear message
-- [ ] Unsupported providers return clear error
-- [ ] Unit and integration tests pass
+- [x] `list_versions` returns version history for S3 objects
+- [x] `restore_version` restores a previous version
+- [x] VFS cache properly invalidated after restore
+- [x] Non-versioned buckets return clear message
+- [x] Unsupported providers return clear error
+- [x] Unit and integration tests pass

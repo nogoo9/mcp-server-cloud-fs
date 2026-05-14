@@ -1,5 +1,10 @@
 # Connection Health-Check UI
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#20](https://github.com/nogoo9/mcp-server-cloud-fs/issues/20)
+> **Commit:** [`e43a50f`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/e43a50f) — `feat(health): add connection health-check module`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 Users frequently struggle with cloud storage configuration — wrong credentials, incorrect endpoints, bucket permissions, region mismatches. Errors only surface when an MCP client tries to use a tool, leading to a poor first-run experience.
@@ -69,9 +74,9 @@ When running with `--transport http`, expose `/health` returning JSON:
 
 ## Acceptance Criteria
 
-- [ ] `cloud-fs-mcp check s3 s3://bucket` validates connection
-- [ ] Clear pass/fail output for each check
-- [ ] `/health` endpoint returns JSON when using HTTP transport
-- [ ] Detects common misconfigurations (wrong region, bad credentials)
-- [ ] Works with all providers
-- [ ] Does not require MCP client connection
+- [x] `cloud-fs-mcp check s3 s3://bucket` validates connection
+- [x] Clear pass/fail output for each check
+- [x] `/health` endpoint returns JSON when using HTTP transport
+- [x] Detects common misconfigurations (wrong region, bad credentials)
+- [x] Works with all providers
+- [x] Does not require MCP client connection

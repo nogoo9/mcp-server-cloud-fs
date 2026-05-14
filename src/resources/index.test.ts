@@ -3,9 +3,9 @@ import { describe, expect, it } from "bun:test";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { parseUri } from "../path-utils.js";
 import { MemoryProvider } from "../providers/memory.js";
+import type { ServerContext } from "../server.js";
 import { makeCache } from "../tools/__test-helpers.js";
 import { VirtualFS } from "../vfs.js";
-import type { ServerContext } from "../server.js";
 import { registerResources } from "./index.js";
 
 async function createCtx() {
@@ -72,9 +72,7 @@ describe("registerResources", () => {
 		const templates = (server as any)._registeredResourceTemplates;
 		expect(templates).toBeDefined();
 		const keys =
-			templates instanceof Map
-				? [...templates.keys()]
-				: Object.keys(templates);
+			templates instanceof Map ? [...templates.keys()] : Object.keys(templates);
 		expect(keys.length).toBeGreaterThanOrEqual(1);
 	});
 });

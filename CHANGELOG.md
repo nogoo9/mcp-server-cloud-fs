@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0] — 2026-05-15
+
+### Added
+
+- **Structured error handling** — `CloudError` class with typed error codes (`RATE_LIMITED`, `PERMISSION_DENIED`, `BUCKET_NOT_FOUND`, etc.) and provider-specific mappers for S3, Azure, and GCS. Errors include `provider`, `statusCode`, and `retryable` metadata for programmatic handling.
+- **Byte-range reads (`read_file_chunk`)** — read specific byte ranges from cloud objects without downloading the entire file. Supports `utf8` and `base64` encodings, with a 10MB per-chunk safety limit.
+- **Presigned URLs (`get_presigned_url`)** — generate temporary access URLs for cloud objects via AWS SDK presigners. Supports configurable expiration (default: 1 hour) and `get`/`put` operations.
+- **Structured audit logging** — `AuditLogger` middleware with pluggable sinks (`StderrAuditSink`, `FileAuditSink`). Logs tool name, arguments (sanitized), duration, scope, resource URI, and outcome as structured JSON. Enabled via `--audit-log` / `--audit-log-file` CLI flags.
+- **Object metadata & tag tools** — `get_object_metadata` returns size, content type, custom metadata, and tags. `set_object_tags` replaces tags on an object. `search_by_tag` lists objects matching tag filters (AND logic).
+- **Object versioning tools** — `list_versions` returns version history with timestamps, sizes, and latest/delete markers. `restore_version` copies a previous version over the current one. Requires versioning-enabled storage.
+- **MCP Resources** — cloud storage roots and paths exposed as browsable MCP Resources. Static root resources registered per configured root; dynamic resource template (`cloud-fs://{cloudPath}`) resolves to directory listings (JSON) or file content (UTF-8 / base64).
+- **Connection health-check module** — `checkHealth()` probes authentication, list access, optional write access, and versioning support. `formatHealthReport()` produces terminal-friendly output. Server validates credentials at startup and exits with a diagnostic report on failure.
+- **Multi-provider routing (`MultiProvider`)** — composite `StorageProvider` that routes operations to scheme-specific sub-providers, enabling a single server instance to serve S3 + Azure + GCS simultaneously. Zero VFS changes required.
+- **Azure DefaultAzureCredential** — `AzureProvider` now supports Managed Identity, OIDC, and other federated auth flows when only `accountName` is provided. `@azure/identity` added as an optional peer dependency.
+
+### Changed
+
+- `StorageProvider` interface extended with optional methods: `getObjectMetadata`, `setObjectTags`, `getObjectTags`, `listObjectVersions`, `restoreObjectVersion`, `getPresignedUrl`. Providers that don't support these return clear error messages.
+- `MemoryProvider` implements all optional methods (metadata, tags, versioning) for testing.
+- Startup credential validation added — server verifies provider connectivity before accepting MCP connections.
+
 ## [0.5.0] — 2026-05-14
 
 ### Added

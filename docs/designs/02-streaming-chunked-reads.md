@@ -1,5 +1,10 @@
 # Streaming & Chunked File Reading
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#12](https://github.com/nogoo9/mcp-server-cloud-fs/issues/12)
+> **Commit:** [`5946f91`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/5946f91) — `feat(tools): add read_file_chunk for byte-range reads`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 The current `read_file` / `read_text_file` tools download the **entire file** into memory before returning it to the LLM. For large files (logs, CSVs, datasets), this causes:
@@ -83,8 +88,8 @@ src/auth/scopes.ts     → [MODIFY] add read_file_chunk to READ scope
 
 ## Acceptance Criteria
 
-- [ ] `read_file_chunk` tool returns exact byte ranges without full download
-- [ ] Works with all providers (S3, Azure, GCS, Memory, SQLite)
-- [ ] `encoding: "base64"` option for binary chunks
-- [ ] Auth scope mapping is correct
-- [ ] Unit tests cover: normal range, open-ended range, out-of-bounds, encoding
+- [x] `read_file_chunk` tool returns exact byte ranges without full download
+- [x] Works with all providers (S3, Azure, GCS, Memory, SQLite)
+- [x] `encoding: "base64"` option for binary chunks
+- [x] Auth scope mapping is correct
+- [x] Unit tests cover: normal range, open-ended range, out-of-bounds, encoding

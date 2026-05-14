@@ -1,5 +1,10 @@
 # Expose Bucket Hierarchies as MCP Resources
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#11](https://github.com/nogoo9/mcp-server-cloud-fs/issues/11)
+> **Commit:** [`9ba9a52`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/9ba9a52) — `feat(resources): expose bucket hierarchies as MCP Resources`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 Currently, all interactions with cloud storage go through MCP **Tools** (e.g., `list_directory`, `read_file`). This forces the LLM to explicitly call `list_directory` before it can "see" the file structure, consuming extra tokens and round-trips. The MCP specification includes a **Resources** primitive designed for exactly this — exposing data the LLM can browse in its context window without explicit tool calls.
@@ -78,8 +83,8 @@ No changes to VFS, providers, or existing tools. Resources are a read-only view.
 
 ## Acceptance Criteria
 
-- [ ] MCP clients can discover root resources without calling any tool
-- [ ] Navigating a resource URI returns directory listing or file content
-- [ ] Resource template handles nested paths (`a/b/c/`)
-- [ ] Binary files return base64 with correct `mimeType`
-- [ ] Unit tests pass with mock provider
+- [x] MCP clients can discover root resources without calling any tool
+- [x] Navigating a resource URI returns directory listing or file content
+- [x] Resource template handles nested paths (`a/b/c/`)
+- [x] Binary files return base64 with correct `mimeType`
+- [x] Unit tests pass with mock provider

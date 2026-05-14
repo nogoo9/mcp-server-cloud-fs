@@ -1,5 +1,10 @@
 # Descriptive Cloud-Aware Error Handling
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#17](https://github.com/nogoo9/mcp-server-cloud-fs/issues/17)
+> **Commit:** [`ef4dfdc`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/ef4dfdc) — `feat(errors): add structured cloud-aware error handling`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 Current error handling uses generic catch-all messages. Cloud storage failures have specific, actionable causes that should be surfaced: rate limiting, region mismatches, permission denied, bucket not found, etc.
@@ -64,9 +69,9 @@ Tool handlers already catch errors and return `{ isError: true }` — they just 
 
 ## Acceptance Criteria
 
-- [ ] S3 rate limiting returns "Rate limited by AWS" message
-- [ ] Permission errors include the specific permission needed
-- [ ] Region mismatches suggest the correct region
-- [ ] Network errors suggest checking endpoint configuration
-- [ ] All existing tests continue to pass
-- [ ] Error mapping does not affect happy-path performance
+- [x] S3 rate limiting returns "Rate limited by AWS" message
+- [x] Permission errors include the specific permission needed
+- [x] Region mismatches suggest the correct region
+- [x] Network errors suggest checking endpoint configuration
+- [x] All existing tests continue to pass
+- [x] Error mapping does not affect happy-path performance

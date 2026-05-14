@@ -1,5 +1,10 @@
 # Object Metadata & Tag Search Tools
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#15](https://github.com/nogoo9/mcp-server-cloud-fs/issues/15)
+> **Commit:** [`0f722dc`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/0f722dc) — `feat(tools): add object metadata and tag tools`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 Cloud objects are more than just bytes — they carry **metadata** (Content-Type, Cache-Control, custom headers) and **tags** (key-value pairs for classification, cost allocation, lifecycle management). The current toolset treats objects as opaque files, missing these cloud-native capabilities.
@@ -111,10 +116,10 @@ Cap at `max_objects` to bound the cost.
 
 ## Acceptance Criteria
 
-- [ ] `get_object_metadata` returns metadata + tags for S3/Azure/GCS objects
-- [ ] `set_object_tags` sets tags on objects
-- [ ] `search_by_tag` finds objects matching tag filters
-- [ ] Unsupported providers return clear error messages
-- [ ] Memory/SQLite providers support metadata and tags
-- [ ] Proper OAuth scope enforcement
-- [ ] Unit tests with mock provider
+- [x] `get_object_metadata` returns metadata + tags for S3/Azure/GCS objects
+- [x] `set_object_tags` sets tags on objects
+- [x] `search_by_tag` finds objects matching tag filters
+- [x] Unsupported providers return clear error messages
+- [x] Memory/SQLite providers support metadata and tags
+- [x] Proper OAuth scope enforcement
+- [x] Unit tests with mock provider

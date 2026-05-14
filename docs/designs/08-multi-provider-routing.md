@@ -1,5 +1,10 @@
 # Multi-Provider Routing ("Cloud Hub")
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#18](https://github.com/nogoo9/mcp-server-cloud-fs/issues/18)
+> **Commit:** [`f36d138`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/f36d138) — `feat(providers): add MultiProvider for multi-cloud routing`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 Currently, a single server instance is locked to **one** provider type (S3 OR Azure OR GCS). Users managing multi-cloud environments need separate server instances for each provider. This is operationally complex and wastes resources.
@@ -79,9 +84,9 @@ cloud-fs-mcp multi s3://bucket1 az://container1 \
 
 ## Acceptance Criteria
 
-- [ ] `cloud-fs-mcp multi s3://... az://...` starts successfully
-- [ ] Tools route to correct provider based on path URI scheme
-- [ ] VFS cache operates correctly across providers
-- [ ] Existing single-provider mode is unaffected
-- [ ] Unit tests verify multi-provider routing
-- [ ] E2E test with two providers in one instance
+- [x] `cloud-fs-mcp multi s3://... az://...` starts successfully
+- [x] Tools route to correct provider based on path URI scheme
+- [x] VFS cache operates correctly across providers
+- [x] Existing single-provider mode is unaffected
+- [x] Unit tests verify multi-provider routing
+- [x] E2E test with two providers in one instance

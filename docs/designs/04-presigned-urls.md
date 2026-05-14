@@ -1,5 +1,10 @@
 # `get_presigned_url` Tool
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#14](https://github.com/nogoo9/mcp-server-cloud-fs/issues/14)
+> **Commit:** [`d25525e`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/d25525e) — `feat(tools): add get_presigned_url for temporary access URLs`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 When an LLM needs to share a cloud-stored file with the user (e.g., an image, PDF, or large dataset), it currently has two bad options:
@@ -78,10 +83,10 @@ export interface StorageProvider {
 
 ## Acceptance Criteria
 
-- [ ] `get_presigned_url` returns a working HTTPS URL for S3, Azure, GCS
-- [ ] URLs expire after the specified duration
-- [ ] `operation: "put"` generates upload URLs
-- [ ] Memory/SQLite providers return a descriptive error
-- [ ] Maximum expiration enforced server-side
-- [ ] Proper OAuth scope enforcement
-- [ ] Unit and integration tests pass
+- [x] `get_presigned_url` returns a working HTTPS URL for S3, Azure, GCS
+- [x] URLs expire after the specified duration
+- [x] `operation: "put"` generates upload URLs
+- [x] Memory/SQLite providers return a descriptive error
+- [x] Maximum expiration enforced server-side
+- [x] Proper OAuth scope enforcement
+- [x] Unit and integration tests pass

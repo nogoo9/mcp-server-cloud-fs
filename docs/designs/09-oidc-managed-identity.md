@@ -1,5 +1,10 @@
 # OIDC & Managed Identity Support
 
+> **Status:** ✅ Implemented in v0.6.0
+> **Issue:** [#19](https://github.com/nogoo9/mcp-server-cloud-fs/issues/19)
+> **Commit:** [`3445d42`](https://github.com/nogoo9/mcp-server-cloud-fs/commit/3445d42) — `feat(auth): add Azure DefaultAzureCredential and startup validation`
+> **Branch:** `feature/cloud-native-v1`
+
 ## Problem
 
 Current authentication to cloud providers relies on static credentials via environment variables (`AWS_ACCESS_KEY_ID`, `AZURE_STORAGE_CONNECTION_STRING`). In production:
@@ -67,9 +72,9 @@ async function validateCredentials(provider: StorageProvider, roots: ParsedRoot[
 
 ## Acceptance Criteria
 
-- [ ] Azure provider works with `DefaultAzureCredential` (no connection string)
-- [ ] Startup credential validation catches auth failures early
-- [ ] `--credential-mode` CLI flag documented
-- [ ] Production guide covers IRSA, Managed Identity, Workload Identity
-- [ ] Existing static credential flow is unaffected
-- [ ] No new hard dependencies (Azure Identity is optional peer dep)
+- [x] Azure provider works with `DefaultAzureCredential` (no connection string)
+- [x] Startup credential validation catches auth failures early
+- [x] `--credential-mode` CLI flag documented
+- [x] Production guide covers IRSA, Managed Identity, Workload Identity
+- [x] Existing static credential flow is unaffected
+- [x] No new hard dependencies (Azure Identity is optional peer dep)
