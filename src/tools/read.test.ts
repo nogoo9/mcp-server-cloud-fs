@@ -1,8 +1,11 @@
 // src/tools/read.test.ts
 import { describe, expect, it, mock } from "bun:test";
 import { parseUri } from "../path-utils.js";
+import { MemoryProvider } from "../providers/memory.js";
+import { VirtualFS } from "../vfs.js";
 import { makeCache, makeProvider, makeVfs } from "./__test-helpers.js";
 import {
+	handleReadFileChunk,
 	handleReadMediaFile,
 	handleReadMultipleFiles,
 	handleReadTextFile,
@@ -134,5 +137,121 @@ describe("handleReadMultipleFiles", () => {
 		);
 		expect(result.content).toHaveLength(2);
 		expect((result.content[1]! as AsText).text).toContain("Error");
+	});
+});
+
+describe("handleReadFileChunk", () => {
+	const FILE_CONTENT =
+		"Hello, World! This is test content for byte-range reads.";
+
+	// Behavioral setup: real MemoryProvider + real VFS, no mocks
+	async function chunkCtx() {
+		const provider = new MemoryProvider();
+		const root = parseUri("mem://chunk-test");
+		await provider.putObject(root, "file.txt", Buffer.from(FILE_CONTENT));
+		const vfs = new VirtualFS(provider, makeCache());
+		return { vfs, roots: [root] };
+	}
+
+	it("reads a specific byte range as utf8", async () => {
+		const result = await handleReadFileChunk(
+			{
+				path: "mem://chunk-test/file.txt",
+				start_byte: 0,
+				end_byte: 4,
+				encoding: "utf8",
+			},
+			await chunkCtx(),
+		);
+		expect(result.isError).toBeFalsy();
+		const text = (result.content[0]! as AsText).text;
+		expect(text).toContain("Hello");
+		expect(text).toContain("Bytes 0");
+	});
+
+	it("reads to end of file when end_byte is omitted", async () => {
+		const start = FILE_CONTENT.length - 5;
+		const result = await handleReadFileChunk(
+			{
+				path: "mem://chunk-test/file.txt",
+				start_byte: start,
+				encoding: "utf8",
+			},
+			await chunkCtx(),
+		);
+		expect(result.isError).toBeFalsy();
+		const text = (result.content[0]! as AsText).text;
+		expect(text).toContain("eads.");
+	});
+
+	it("returns base64-encoded content when encoding is base64", async () => {
+		const result = await handleReadFileChunk(
+			{
+				path: "mem://chunk-test/file.txt",
+				start_byte: 0,
+				end_byte: 4,
+				encoding: "base64",
+			},
+			await chunkCtx(),
+		);
+		expect(result.isError).toBeFalsy();
+		const text = (result.content[0]! as AsText).text;
+		// "Hello" in base64 is "SGVsbG8="
+		expect(text).toContain("SGVsbG8=");
+	});
+
+	it("returns error when start_byte is past EOF", async () => {
+		const result = await handleReadFileChunk(
+			{
+				path: "mem://chunk-test/file.txt",
+				start_byte: 9999,
+				encoding: "utf8",
+			},
+			await chunkCtx(),
+		);
+		expect(result.isError).toBe(true);
+		expect((result.content[0]! as AsText).text).toContain("past end of file");
+	});
+
+	it("clamps end_byte to file size", async () => {
+		const result = await handleReadFileChunk(
+			{
+				path: "mem://chunk-test/file.txt",
+				start_byte: 0,
+				end_byte: 99999,
+				encoding: "utf8",
+			},
+			await chunkCtx(),
+		);
+		expect(result.isError).toBeFalsy();
+		const text = (result.content[0]! as AsText).text;
+		expect(text).toContain(FILE_CONTENT);
+	});
+
+	it("returns error for path outside allowed roots", async () => {
+		const result = await handleReadFileChunk(
+			{
+				path: "mem://evil-bucket/file.txt",
+				start_byte: 0,
+				encoding: "utf8",
+			},
+			await chunkCtx(),
+		);
+		expect(result.isError).toBe(true);
+		expect((result.content[0]! as AsText).text).toContain("Access denied");
+	});
+
+	it("includes total file size in response header", async () => {
+		const result = await handleReadFileChunk(
+			{
+				path: "mem://chunk-test/file.txt",
+				start_byte: 0,
+				end_byte: 4,
+				encoding: "utf8",
+			},
+			await chunkCtx(),
+		);
+		const text = (result.content[0]! as AsText).text;
+		expect(text).toContain(`${FILE_CONTENT.length} total`);
 	});
 });

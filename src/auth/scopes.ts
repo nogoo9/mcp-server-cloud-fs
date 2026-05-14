@@ -25,6 +25,7 @@ const TOOL_SCOPE_MAP: Record<string, Scope> = {
 	read_media_file: SCOPES.READ,
 	read_multiple_files: SCOPES.READ,
 	read_file_range: SCOPES.READ,
+	read_file_chunk: SCOPES.READ,
 	// Write tools
 	write_file: SCOPES.WRITE,
 	edit_file: SCOPES.WRITE,
