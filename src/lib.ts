@@ -76,6 +76,7 @@ export type {
 	StorageProvider,
 } from "./providers/interface.js";
 export { MemoryProvider } from "./providers/memory.js";
+export { MultiProvider } from "./providers/multi.js";
 export { S3Provider } from "./providers/s3.js";
 export { SqliteProvider } from "./providers/sqlite.js";
 export type { ServerContext } from "./server.js";
