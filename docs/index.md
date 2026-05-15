@@ -19,6 +19,9 @@ hero:
     - theme: alt
       text: npm
       link: https://www.npmjs.com/package/@nogoo9/mcp-server-cloud-fs
+    - theme: alt
+      text: ☕ Buy Me a Coffee
+      link: https://buymeacoffee.com/eterna2
 
 features:
   - icon: ☁️

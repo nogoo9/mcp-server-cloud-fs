@@ -14,6 +14,8 @@
   <img src="https://img.shields.io/npm/dm/%40nogoo9%2Fmcp-server-cloud-fs" alt="NPM Downloads">
   <a href="https://skills.sh/nogoo9/mcp-server-cloud-fs"><img src="https://skills.sh/b/nogoo9/mcp-server-cloud-fs" alt="skills.sh"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm--Shield--1.0.0-blue" alt="License"></a>
+  <br/>
+  <a href="https://buymeacoffee.com/eterna2"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-eterna2-FFDD00?logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee"></a>
 </p>
 
 <p align="center">
