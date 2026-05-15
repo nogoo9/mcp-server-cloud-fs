@@ -19,9 +19,6 @@ hero:
     - theme: alt
       text: npm
       link: https://www.npmjs.com/package/@nogoo9/mcp-server-cloud-fs
-    - theme: alt
-      text: ☕ Buy Me a Coffee
-      link: https://buymeacoffee.com/eterna2
 
 features:
   - icon: ☁️
@@ -73,3 +70,9 @@ npx @nogoo9/mcp-server-cloud-fs azure az://my-container
 # Google Cloud Storage
 npx @nogoo9/mcp-server-cloud-fs gcs gs://my-bucket
 ```
+
+<p align="center">
+  <a href="https://buymeacoffee.com/eterna2">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="48">
+  </a>
+</p>
