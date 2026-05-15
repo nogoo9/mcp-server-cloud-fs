@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  Cloud replacement for <code>mcp-server-filesystem</code> — 20+ tools for S3, Azure Blob, and GCS.<br/>
+  Cloud replacement for <code>mcp-server-filesystem</code> — 27 tools for S3, Azure Blob, and GCS.<br/>
   Deploy locally via STDIO or remotely over HTTP/WebSocket with OAuth 2.1 auth.<br/>
   Also available as an npm library and interactive TUI.
 </p>
@@ -65,9 +65,20 @@
 
 `@nogoo9/mcp-server-cloud-fs` exposes all 14 tools defined by [`mcp-server-filesystem`](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) — same tool names, same parameter schemas — over cloud object storage. Drop it into any MCP client config that currently points at `mcp-server-filesystem` and your AI assistant gains read/write access to S3, Azure Blob Storage, or Google Cloud Storage buckets.
 
-It also includes **5 extended tools** inspired by [claude-code's filesystem tool surface](https://github.com/codeaashu/claude-code/tree/main/src/tools): line-range reads, in-process regex search (single file and multi-file), server-side copy, and opt-in deletion.
+It also includes **5 extended tools** inspired by [claude-code's filesystem tool surface](https://github.com/codeaashu/claude-code/tree/main/src/tools): line-range reads, byte-range chunk reads, in-process regex search (single file and multi-file), server-side copy, and opt-in deletion. Plus **6 cloud-native tools**: presigned URLs, object metadata/tags, tag-based search, version history, and version restore.
 
 A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, a **shell tool** lets you run POSIX-like commands (`ls`, `grep`, `jq`, `cat | wc`, etc.) against cloud storage, and the package is available as a **programmatic npm library**.
+
+### v0.6.0 Highlights
+
+- **Cloud-native tools**: presigned URLs, object metadata/tags, version history, version restore
+- **Byte-range reads**: `read_file_chunk` fetches specific byte ranges without downloading the full object
+- **Structured audit logging**: tool invocation audit trail with pluggable sinks (stderr, file)
+- **Multi-provider routing**: `MultiProvider` serves S3 + Azure + GCS from a single server instance
+- **Azure Managed Identity**: `DefaultAzureCredential` for OIDC and federated auth
+- **Connection health-check**: startup credential validation with diagnostic reporting
+- **MCP Resources**: browse cloud storage as native MCP Resources (no tool calls needed)
+- **Structured errors**: `CloudError` with typed codes and provider-specific error mappers
 
 ### v0.5.0 Highlights
 
@@ -297,10 +308,10 @@ When auth is enabled, tool access is controlled by granular scopes:
 
 | Scope | Tools |
 |---|---|
-| `cloud-fs:read` | `read_file`, `read_text_file`, `read_media_file`, `read_multiple_files`, `read_file_range` |
-| `cloud-fs:write` | `write_file`, `edit_file`, `create_directory` |
+| `cloud-fs:read` | `read_file`, `read_text_file`, `read_media_file`, `read_multiple_files`, `read_file_range`, `read_file_chunk`, `get_presigned_url`, `get_object_metadata`, `list_versions` |
+| `cloud-fs:write` | `write_file`, `edit_file`, `create_directory`, `set_object_tags`, `restore_version` |
 | `cloud-fs:delete` | `delete_file` |
-| `cloud-fs:search` | `search_files`, `grep_file`, `grep_files`, `list_directory`, `list_directory_with_sizes`, `directory_tree` |
+| `cloud-fs:search` | `search_files`, `grep_file`, `grep_files`, `list_directory`, `list_directory_with_sizes`, `directory_tree`, `search_by_tag` |
 | `cloud-fs:shell` | `shell` |
 | `cloud-fs:admin` | All tools + `get_file_info`, `list_allowed_directories` |
 
@@ -440,6 +451,8 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 | `--rate-limit <req/min>` | `0` (off) | Rate limit per client |
 | `--rate-limit-burst <n>` | `10` | Burst allowance |
 | `--request-logging` | `false` | Enable structured JSON request logging |
+| `--audit-log` | `false` | Enable tool invocation audit logging to stderr |
+| `--audit-log-file <path>` | — | Write audit log to file (implies `--audit-log`) |
 | `--security-headers` | `false` | Enable security headers via nosecone |
 | `--security-headers-config <json>` | — | Inline JSON config for nosecone |
 | `--security-headers-config-file <path>` | — | Load nosecone config from a JSON file |
@@ -619,6 +632,7 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | `read_media_file` | `path` | Read image/media as base64 MCP image content block. |
 | `read_multiple_files` | `paths` | Read several files in parallel. |
 | `read_file_range` ✨ | `path`, `offset`, `limit` | Read a 1-based line range with total line count header. |
+| `read_file_chunk` ✨ | `path`, `start_byte`, `end_byte?`, `encoding?` | Read a byte range without downloading the entire file. Max 10MB. |
 
 ### Write tools
 
@@ -660,6 +674,19 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | `list_allowed_directories` | _(none)_ | List configured root URIs. |
 
 > ✨ = Extended tool
+
+### Cloud-native tools ☁️
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `get_presigned_url` ☁️ | `path`, `operation?`, `expires_in?` | Generate a temporary access URL (default: GET, 1 hour). |
+| `get_object_metadata` ☁️ | `path` | Size, content type, last modified, custom metadata, and tags. |
+| `set_object_tags` ☁️ | `path`, `tags` | Replace object tags with key-value pairs. |
+| `search_by_tag` ☁️ | `path`, `tags`, `recursive?` | Find objects matching tag filters (AND logic). |
+| `list_versions` ☁️ | `path`, `max_results?`, `page_token?` | Version history with timestamps, sizes, and markers. |
+| `restore_version` ☁️ | `path`, `version_id` | Restore a previous object version (copies over current). |
+
+> ☁️ = Cloud-native tool (requires provider support)
 
 ### Shell tool ⚡
 
@@ -813,7 +840,10 @@ const server = createMcpServer({ vfs, roots });
 | `executeShell(command, ctx)` | Run POSIX-like commands against the VFS |
 | `VirtualFS` | FUSE-inspired write-back overlay |
 | `MemoryStore`, `FilesystemStore`, `createRedisStore`, `PassThroughCache` | Cache backends |
-| `S3Provider`, `AzureProvider`, `GcsProvider`, `MemoryProvider`, `SqliteProvider` | Storage providers |
+| `S3Provider`, `AzureProvider`, `GcsProvider`, `MemoryProvider`, `SqliteProvider`, `MultiProvider` | Storage providers |
+| `CloudError`, `CloudErrorCode` | Structured cloud-aware error handling |
+| `checkHealth`, `formatHealthReport` | Connection health-check utilities |
+| `AuditLogger`, `StderrAuditSink`, `FileAuditSink` | Tool invocation audit logging |
 | `parseUri`, `toCacheKey`, `resolveToolPath` | Path utilities |
 | `ShellContext`, `ShellCommandHandler` | Shell extension types |
 
