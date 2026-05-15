@@ -5,7 +5,7 @@ import internalsSidebar from "../reference/internals/typedoc-sidebar.json";
 export default defineConfig({
 	title: "Cloud FS MCP Server",
 	description:
-		"Cloud replacement for mcp-server-filesystem — 20+ tools for S3, Azure Blob, and GCS with OAuth 2.1, VFS, and multi-transport support",
+		"Cloud replacement for mcp-server-filesystem — 27 tools for S3, Azure Blob, and GCS with OAuth 2.1, VFS, and multi-transport support",
 	base: process.env.VITEPRESS_BASE || "/mcp-server-cloud-fs/",
 
 	lastUpdated: true,
@@ -29,7 +29,7 @@ export default defineConfig({
 			{
 				property: "og:description",
 				content:
-					"Cloud replacement for mcp-server-filesystem with 20+ tools, OAuth 2.1, and multi-transport support",
+					"Cloud replacement for mcp-server-filesystem with 27 tools, OAuth 2.1, and multi-transport support",
 			},
 		],
 	],
@@ -51,6 +51,7 @@ export default defineConfig({
 					text: "Guide",
 					items: [
 						{ text: "Getting Started", link: "/guide/getting-started" },
+						{ text: "Use Cases", link: "/guide/use-cases" },
 						{ text: "Interactive Shell", link: "/guide/shell" },
 						{ text: "AI Agent Skill", link: "/guide/ai-skill" },
 						{ text: "Transports", link: "/guide/transports" },

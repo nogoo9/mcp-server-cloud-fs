@@ -142,4 +142,4 @@ bun run inspect -- s3 s3://my-bucket --region us-east-1 --enable-shell
 - [Transports](/guide/transports) — learn about STDIO, HTTP, and WebSocket transport modes
 - [Authentication](/guide/authentication) — configure OAuth 2.1 for production deployments
 - [Provider Setup](/guide/providers) — detailed setup for each cloud provider
-- [Tool Reference](/reference/tools) — complete list of all 20+ tools
+- [Tool Reference](/reference/tools) — complete list of all 27 tools

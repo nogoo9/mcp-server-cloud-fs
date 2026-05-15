@@ -293,6 +293,54 @@ On Node.js, install `better-sqlite3` manually: `npm install better-sqlite3`. Not
 
 ---
 
+## Multi-Provider Routing
+
+Serve multiple cloud providers from a single server instance. The server automatically routes operations to the correct provider based on the URI scheme.
+
+```bash
+# S3 + Azure in one server
+cloud-fs-mcp s3 s3://data-lake azure az://reports --enable-shell
+
+# S3 + GCS
+cloud-fs-mcp s3 s3://raw-data gcs gs://processed-data --region us-east-1
+```
+
+### MCP Configuration
+
+```json
+{
+  "mcpServers": {
+    "cloud-fs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y", "@nogoo9/mcp-server-cloud-fs",
+        "s3", "s3://data-lake",
+        "azure", "az://reports",
+        "--enable-shell"
+      ],
+      "env": {
+        "AWS_PROFILE": "prod-readonly",
+        "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;..."
+      }
+    }
+  }
+}
+```
+
+The AI sees all roots as one unified filesystem and can copy files between providers:
+
+```bash
+# Copy from S3 to Azure via shell
+shell "cp s3://data-lake/report.csv az://reports/2026/report.csv"
+```
+
+::: tip Credential Isolation
+Each provider uses its own credential chain independently. S3 reads `AWS_*` env vars, Azure reads `AZURE_*` env vars, and GCS reads `GOOGLE_*` env vars. They don't interfere.
+:::
+
+---
+
 ## Provider URI Formats
 
 | Provider | URI Format | Example |
