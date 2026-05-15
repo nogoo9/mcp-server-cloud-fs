@@ -2,6 +2,31 @@ import { defineConfig } from "vitepress";
 import typedocSidebar from "../reference/api/typedoc-sidebar.json";
 import internalsSidebar from "../reference/internals/typedoc-sidebar.json";
 
+const architectureSidebar = [
+	{
+		text: "Architecture",
+		items: [
+			{ text: "Virtual Filesystem", link: "/architecture/vfs" },
+			{ text: "Caching", link: "/architecture/caching" },
+		],
+	},
+	{
+		text: "Design Records",
+		items: [
+			{ text: "01. MCP Resources", link: "/designs/01-mcp-resources" },
+			{ text: "02. Streaming Chunked Reads", link: "/designs/02-streaming-chunked-reads" },
+			{ text: "03. Audit Logging", link: "/designs/03-audit-logging" },
+			{ text: "04. Presigned URLs", link: "/designs/04-presigned-urls" },
+			{ text: "05. Metadata & Search", link: "/designs/05-metadata-search" },
+			{ text: "06. Version Restore", link: "/designs/06-version-restore" },
+			{ text: "07. Descriptive Errors", link: "/designs/07-descriptive-errors" },
+			{ text: "08. Multi-Provider Routing", link: "/designs/08-multi-provider-routing" },
+			{ text: "09. OIDC Managed Identity", link: "/designs/09-oidc-managed-identity" },
+			{ text: "10. Health Check UI", link: "/designs/10-health-check-ui" },
+		],
+	},
+];
+
 export default defineConfig({
 	title: "Cloud FS MCP Server",
 	description:
@@ -51,13 +76,14 @@ export default defineConfig({
 					text: "Guide",
 					items: [
 						{ text: "Getting Started", link: "/guide/getting-started" },
+						{ text: "What's New in v0.6.0", link: "/guide/whats-new" },
 						{ text: "Use Cases", link: "/guide/use-cases" },
-						{ text: "Interactive Shell", link: "/guide/shell" },
+						{ text: "Provider Setup", link: "/guide/providers" },
 						{ text: "AI Agent Skill", link: "/guide/ai-skill" },
+						{ text: "Interactive Shell", link: "/guide/shell" },
 						{ text: "Transports", link: "/guide/transports" },
 						{ text: "Authentication", link: "/guide/authentication" },
-						{ text: "Production Features", link: "/guide/production" },
-						{ text: "Provider Setup", link: "/guide/providers" },
+						{ text: "Production Hardening", link: "/guide/production" },
 					],
 				},
 			],
@@ -86,15 +112,8 @@ export default defineConfig({
 					],
 				},
 			],
-			"/architecture/": [
-				{
-					text: "Architecture",
-					items: [
-						{ text: "Virtual Filesystem", link: "/architecture/vfs" },
-						{ text: "Caching", link: "/architecture/caching" },
-					],
-				},
-			],
+			"/architecture/": architectureSidebar,
+			"/designs/": architectureSidebar,
 			"/development/": [
 				{
 					text: "Development",
