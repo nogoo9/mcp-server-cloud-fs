@@ -71,4 +71,75 @@ export interface StorageProvider {
 		delimiter?: string,
 	): Promise<ListResult>;
 	createPrefix(root: ParsedRoot, prefix: string): Promise<void>;
+
+	/**
+	 * Generate a presigned URL for temporary access to an object.
+	 * Not all providers support this — check before calling.
+	 */
+	getPresignedUrl?(
+		root: ParsedRoot,
+		key: string,
+		opts: {
+			/** URL validity in seconds. */
+			expiresIn: number;
+			/** 'get' for download, 'put' for upload. */
+			operation: "get" | "put";
+		},
+	): Promise<string>;
+
+	/** Get extended metadata and tags for an object. */
+	getObjectMetadata?(root: ParsedRoot, key: string): Promise<ObjectMetadata>;
+
+	/** Set tags on an object. Replaces all existing tags. */
+	setObjectTags?(
+		root: ParsedRoot,
+		key: string,
+		tags: Record<string, string>,
+	): Promise<void>;
+
+	/** Get tags for an object. */
+	getObjectTags?(
+		root: ParsedRoot,
+		key: string,
+	): Promise<Record<string, string>>;
+
+	/** List version history for an object. */
+	listObjectVersions?(root: ParsedRoot, key: string): Promise<ObjectVersion[]>;
+
+	/** Restore a previous version of an object (copies it over current). */
+	restoreObjectVersion?(
+		root: ParsedRoot,
+		key: string,
+		versionId: string,
+	): Promise<void>;
+}
+
+/**
+ * Extended metadata for a cloud object, including custom headers and tags.
+ *
+ * @category Providers
+ */
+export interface ObjectMetadata extends ObjectInfo {
+	/** Custom metadata headers (e.g. x-amz-meta-*). */
+	metadata: Record<string, string>;
+	/** Object tags (key-value pairs for classification). */
+	tags: Record<string, string>;
+}
+
+/**
+ * A single version entry for a versioned object.
+ *
+ * @category Providers
+ */
+export interface ObjectVersion {
+	/** Provider-specific version identifier. */
+	versionId: string;
+	/** When this version was created. */
+	lastModified: Date;
+	/** Size of this version in bytes. */
+	size: number;
+	/** Whether this is the current/latest version. */
+	isLatest: boolean;
+	/** Whether this version is a delete marker (S3-specific). */
+	isDeleteMarker?: boolean;
 }

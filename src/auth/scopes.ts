@@ -25,6 +25,7 @@ const TOOL_SCOPE_MAP: Record<string, Scope> = {
 	read_media_file: SCOPES.READ,
 	read_multiple_files: SCOPES.READ,
 	read_file_range: SCOPES.READ,
+	read_file_chunk: SCOPES.READ,
 	// Write tools
 	write_file: SCOPES.WRITE,
 	edit_file: SCOPES.WRITE,
@@ -44,6 +45,15 @@ const TOOL_SCOPE_MAP: Record<string, Scope> = {
 	// Info tools
 	get_file_info: SCOPES.READ,
 	list_allowed_directories: SCOPES.READ,
+	// Presigned URL tools
+	get_presigned_url: SCOPES.READ,
+	// Metadata & tag tools
+	get_object_metadata: SCOPES.READ,
+	set_object_tags: SCOPES.WRITE,
+	search_by_tag: SCOPES.SEARCH,
+	// Versioning tools
+	list_versions: SCOPES.READ,
+	restore_version: SCOPES.WRITE,
 	// Shell tool
 	shell: SCOPES.SHELL,
 	shell_app: SCOPES.SHELL,

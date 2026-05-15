@@ -1,17 +1,57 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+
+# Coverage & test artifacts
 coverage/
+*.lcov
+
+# Environment & secrets
 .env
+.env.*
 *.local
-.claude/settings.local.json
-.worktrees/
-docs/superpowers
 .mcpregistry*_token
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Bun
+bun-debug.log
+
+# TypeScript
+*.tsbuildinfo
+
+# Performance traces & heap snapshots
+trace.json
+trace.json.gz
+*.heapsnapshot
+*.cpuprofile
+
+# npm pack tarballs
+*.tgz
+
+# VitePress docs
 docs/.vitepress/cache
 docs/.vitepress/dist
+
 # Generated API docs (on-demand via typedoc)
 docs/reference/api/
 docs/reference/internals/
-# AI agent skills — installed via `bun x skills add semgrep/skills`, not committed
+docs/superpowers
+
+# Claude / AI agent local settings
+.claude/settings.local.json
+.worktrees/
+
+# AI agent skills — installed via setup-skills workflow, not committed
 .agents/skills/
 
+# Network request/response debug files
+*.network-request
+*.network-response

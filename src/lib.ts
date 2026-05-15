@@ -44,6 +44,19 @@ export type { CacheStore } from "./cache/interface.js";
 export { MemoryStore } from "./cache/memory.js";
 export { PassThroughCache } from "./cache/passthrough.js";
 export { createRedisStore } from "./cache/redis.js";
+// Errors
+export type { CloudErrorCodeValue } from "./errors.js";
+export { CloudError, CloudErrorCode } from "./errors.js";
+// Health
+export type { HealthCheckResult, HealthReport } from "./health.js";
+export { checkHealth, formatHealthReport } from "./health.js";
+// Middleware
+export type { AuditEntry, AuditSink } from "./middleware/audit.js";
+export {
+	AuditLogger,
+	FileAuditSink,
+	StderrAuditSink,
+} from "./middleware/audit.js";
 export type { RateLimiter, RateLimitResult } from "./middleware/rate-limit.js";
 // Middleware (v0.4.0)
 export {
@@ -63,6 +76,7 @@ export type {
 	StorageProvider,
 } from "./providers/interface.js";
 export { MemoryProvider } from "./providers/memory.js";
+export { MultiProvider } from "./providers/multi.js";
 export { S3Provider } from "./providers/s3.js";
 export { SqliteProvider } from "./providers/sqlite.js";
 export type { ServerContext } from "./server.js";

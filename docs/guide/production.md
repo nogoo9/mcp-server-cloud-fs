@@ -146,6 +146,70 @@ JSON audit trail to stderr for compliance and debugging:
 
 Enable with `--request-logging`.
 
+## Audit Logging
+
+Tool invocation audit logging provides a structured JSON record of every MCP tool call — who called it, what arguments were passed, whether it succeeded, and how long it took. Designed for compliance, debugging, and observability.
+
+```json
+{
+  "ts": "2026-05-15T08:30:00.000Z",
+  "tool": "read_file",
+  "args": { "path": "s3://my-bucket/config.json" },
+  "durationMs": 45,
+  "success": true
+}
+```
+
+### Sinks
+
+Audit entries can be sent to one or both sinks:
+
+| Sink | Flag | Description |
+|---|---|---|
+| **stderr** | `--audit-log` | Writes JSON lines to stderr (useful for container log collectors) |
+| **File** | `--audit-log-file <path>` | Appends JSON lines to a file (implies `--audit-log`) |
+
+```bash
+# stderr only (for container log aggregation)
+cloud-fs-mcp s3 s3://my-bucket --audit-log
+
+# File (for compliance archival)
+cloud-fs-mcp s3 s3://my-bucket --audit-log-file /var/log/cloud-fs/audit.jsonl
+
+# Both
+cloud-fs-mcp s3 s3://my-bucket --audit-log --audit-log-file /var/log/cloud-fs/audit.jsonl
+```
+
+::: tip Programmatic Usage
+The SDK exports `AuditLogger`, `StderrAuditSink`, and `FileAuditSink` for custom integrations. You can implement your own sink (e.g., send to a logging service) by implementing the `AuditSink` interface.
+:::
+
+## Startup Health Check
+
+Before accepting connections, the server validates that all configured storage roots are reachable. If any root fails — expired credentials, wrong region, missing bucket — the server exits immediately with a diagnostic report instead of starting in a broken state.
+
+```
+✗ Health check failed:
+  s3://my-bucket — PERMISSION_DENIED: Access Denied (check IAM policy)
+  az://reports — AUTHENTICATION_FAILED: DefaultAzureCredential failed (run 'az login')
+```
+
+This prevents the common problem of an MCP server starting successfully but failing on the first tool call minutes later — especially frustrating during an AI conversation.
+
+::: info Programmatic API
+Use `checkHealth()` and `formatHealthReport()` from the SDK to validate credentials in your own applications before creating a VFS instance.
+
+```typescript
+import { checkHealth, formatHealthReport } from "@nogoo9/mcp-server-cloud-fs";
+
+const report = await checkHealth(provider, roots);
+if (!report.healthy) {
+  console.error(formatHealthReport(report));
+  process.exit(1);
+}
+```
+:::
+
 ## DNS Rebinding Protection
 
 Automatically applied when binding to localhost addresses. Validates the `Host` header against allowed hostnames to prevent DNS rebinding attacks.

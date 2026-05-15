@@ -13,6 +13,7 @@ import {
 	S3Client,
 } from "@aws-sdk/client-s3";
 import { NodeHttpHandler } from "@smithy/node-http-handler";
+import { mapS3Error } from "../errors.js";
 import { inferContentType } from "./content-type.js";
 import type {
 	ListResult,
@@ -87,13 +88,7 @@ export class S3Provider implements StorageProvider {
 				}),
 			);
 		} catch (err: unknown) {
-			const code = (err as { name?: string }).name;
-			if (code === "NoSuchKey" || code === "NotFound") {
-				throw new Error(
-					`File not found: ${root.scheme}://${root.bucket}/${key}`,
-				);
-			}
-			throw err;
+			mapS3Error(err, root.bucket, key);
 		}
 		return streamToBuffer(resp.Body as AsyncIterable<Uint8Array>);
 	}
@@ -191,6 +186,22 @@ export class S3Provider implements StorageProvider {
 				Body: Buffer.alloc(0),
 			}),
 		);
+	}
+
+	async getPresignedUrl(
+		root: ParsedRoot,
+		key: string,
+		opts: { expiresIn: number; operation: "get" | "put" },
+	): Promise<string> {
+		// Dynamic import to avoid hard dependency for users who don't need presigning
+		const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+		const command =
+			opts.operation === "put"
+				? new PutObjectCommand({ Bucket: root.bucket, Key: key })
+				: new GetObjectCommand({ Bucket: root.bucket, Key: key });
+		return getSignedUrl(this.client, command, {
+			expiresIn: opts.expiresIn,
+		});
 	}
 }
 

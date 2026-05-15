@@ -51,6 +51,8 @@ Production (http/ws only):
   --rate-limit <req/min>         Rate limit per client (default: 0 = disabled)
   --rate-limit-burst <n>         Burst allowance (default: 10)
   --request-logging              Enable structured JSON request logging
+  --audit-log                    Enable structured tool invocation audit logging to stderr
+  --audit-log-file <path>        Write audit logs to a file instead of stderr
   --security-headers             Enable security headers via nosecone
   --security-headers-config <json>       Inline JSON config for nosecone options
   --security-headers-config-file <path>  Load nosecone config from a JSON file
@@ -114,6 +116,9 @@ interface CliArgs {
 	securityHeadersOptions?: Record<string, unknown>;
 	// v0.4.1 — TLS
 	caFile?: string;
+	// v1.0.0 — audit
+	auditLog: boolean;
+	auditLogFile?: string;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -154,6 +159,8 @@ function parseArgs(argv: string[]): CliArgs {
 	let rateLimit = 0;
 	let rateLimitBurst = 10;
 	let requestLogging = false;
+	let auditLog = false;
+	let auditLogFile: string | undefined;
 	let enableSecurityHeaders = false;
 	let securityHeadersOptions: Record<string, unknown> | undefined;
 
@@ -246,6 +253,11 @@ function parseArgs(argv: string[]): CliArgs {
 			rateLimitBurst = Number(args[++i]);
 		} else if (arg === "--request-logging") {
 			requestLogging = true;
+		} else if (arg === "--audit-log") {
+			auditLog = true;
+		} else if (arg === "--audit-log-file") {
+			auditLog = true;
+			auditLogFile = args[++i];
 		} else if (arg === "--ca-file") {
 			caFile = args[++i];
 		} else if (arg === "--security-headers") {
@@ -326,6 +338,8 @@ function parseArgs(argv: string[]): CliArgs {
 		rateLimit,
 		rateLimitBurst,
 		requestLogging,
+		auditLog,
+		...(auditLogFile !== undefined && { auditLogFile }),
 		enableSecurityHeaders,
 		...(securityHeadersOptions !== undefined && { securityHeadersOptions }),
 		// v0.4.1
@@ -656,12 +670,36 @@ async function main(): Promise<void> {
 		void flushAndExit("SIGINT");
 	});
 
+	// Set up audit logging if enabled
+	let auditLogger: import("./middleware/audit.js").AuditLogger | undefined;
+	if (args.auditLog) {
+		const { AuditLogger, StderrAuditSink, FileAuditSink } = await import(
+			"./middleware/audit.js"
+		);
+		const sink = args.auditLogFile
+			? new FileAuditSink(args.auditLogFile)
+			: new StderrAuditSink();
+		auditLogger = new AuditLogger(sink);
+	}
+
+	// Startup credential validation — verify provider can authenticate
+	const { checkHealth, formatHealthReport } = await import("./health.js");
+	for (const root of roots) {
+		const report = await checkHealth(provider, root);
+		if (!report.readable) {
+			process.stderr.write(`\n${formatHealthReport(report)}\n`);
+			process.exit(1);
+		}
+	}
+
 	const server = await createMcpServer({
 		vfs,
 		roots,
+		provider,
 		enableDelete: args.enableDelete,
 		grepMaxObjects: args.grepMaxObjects,
 		enableShell: args.enableShell,
+		...(auditLogger !== undefined && { auditLogger }),
 	});
 
 	// Create and start the selected transport

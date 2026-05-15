@@ -1,7 +1,7 @@
 {
   "name": "@nogoo9/mcp-server-cloud-fs",
   "mcpName": "io.github.nogoo9/mcp-server-cloud-fs",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "High-performance MCP server and library providing a cloud-native replacement for mcp-server-filesystem. Supports S3, Azure Blob, GCS, and SQLite with VFS cache coherence.",
   "keywords": [
     "mcp",
@@ -84,6 +84,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.1046.0",
     "@azure/storage-blob": "^12.0.0",
     "@google-cloud/storage": "^7.0.0",
     "@modelcontextprotocol/ext-apps": "^1.7.1",
@@ -97,7 +98,8 @@
   "peerDependencies": {
     "ioredis": "",
     "better-sqlite3": "",
-    "nosecone": ""
+    "nosecone": "",
+    "@azure/identity": ""
   },
   "peerDependenciesMeta": {
     "ioredis": {
@@ -107,6 +109,9 @@
       "optional": true
     },
     "nosecone": {
+      "optional": true
+    },
+    "@azure/identity": {
       "optional": true
     }
   },

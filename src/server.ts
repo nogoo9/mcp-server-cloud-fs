@@ -1,13 +1,19 @@
 // src/server.ts
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ParsedRoot } from "./providers/interface.js";
+import type { AuditLogger } from "./middleware/audit.js";
+import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
+import { registerResources } from "./resources/index.js";
 import { registerDirectoryTools } from "./tools/directory.js";
 import { registerExtendedTools } from "./tools/extended.js";
 import { registerInfoTools } from "./tools/info.js";
+import { registerMetadataTools } from "./tools/metadata.js";
 import { registerMoveTools } from "./tools/move.js";
+import { registerPresignedTools } from "./tools/presigned.js";
 import { registerReadTools } from "./tools/read.js";
 import { registerSearchTools } from "./tools/search.js";
 import { registerShellTool } from "./tools/shell/index.js";
+import { registerVersioningTools } from "./tools/versioning.js";
 import { registerWriteTools } from "./tools/write.js";
 import type { VirtualFS } from "./vfs.js";
 
@@ -22,12 +28,16 @@ import type { VirtualFS } from "./vfs.js";
 export interface ServerContext {
 	vfs: VirtualFS;
 	roots: ParsedRoot[];
+	/** The underlying StorageProvider, used for provider-specific features (e.g. presigned URLs). */
+	provider: StorageProvider;
 	/** Enable the delete_file tool. Default: false. */
 	enableDelete?: boolean;
 	/** Maximum number of objects grep_files will scan per call. Default: 1000. */
 	grepMaxObjects?: number;
 	/** Enable the shell tool. Default: false. */
 	enableShell?: boolean;
+	/** Optional audit logger for tool invocation transparency. */
+	auditLogger?: AuditLogger;
 }
 
 /**
@@ -159,6 +169,44 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 		version: "0.4.0",
 	});
 
+	// If audit logging is enabled, wrap registerTool to intercept handler calls.
+	if (ctx.auditLogger) {
+		const logger = ctx.auditLogger;
+		const original = server.registerTool.bind(server);
+		// biome-ignore lint/suspicious/noExplicitAny: wrapping generic registerTool overloads
+		(server as any).registerTool = (name: string, ...rest: any[]) => {
+			// Last argument is the handler callback
+			const handler = rest[rest.length - 1];
+			if (typeof handler === "function") {
+				rest[rest.length - 1] = async (...handlerArgs: unknown[]) => {
+					const start = performance.now();
+					try {
+						const result = await handler(...handlerArgs);
+						logger.logToolCall(
+							name,
+							(handlerArgs[0] ?? {}) as Record<string, unknown>,
+							{ success: true, duration_ms: performance.now() - start },
+						);
+						return result;
+					} catch (err) {
+						logger.logToolCall(
+							name,
+							(handlerArgs[0] ?? {}) as Record<string, unknown>,
+							{
+								success: false,
+								error: (err as Error).message,
+								duration_ms: performance.now() - start,
+							},
+						);
+						throw err;
+					}
+				};
+			}
+			// biome-ignore lint/suspicious/noExplicitAny: calling original overloaded registerTool
+			return (original as any)(name, ...rest);
+		};
+	}
+
 	registerReadTools(server, ctx);
 	registerWriteTools(server, ctx);
 	registerDirectoryTools(server, ctx);
@@ -166,6 +214,12 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	registerSearchTools(server, ctx);
 	registerInfoTools(server, ctx);
 	registerExtendedTools(server, ctx);
+	registerPresignedTools(server, ctx);
+	registerMetadataTools(server, ctx);
+	registerVersioningTools(server, ctx);
+
+	// Read-only MCP Resources for client-side browsing
+	registerResources(server, ctx);
 
 	if (ctx.enableShell) {
 		registerShellTool(server, ctx);
