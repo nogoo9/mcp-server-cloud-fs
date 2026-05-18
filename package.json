@@ -67,6 +67,7 @@
     "src/",
     "skills/",
     "docs/public/images/*.svg",
+    "docs/public/images/logo.png",
     "!src/**/*.test.ts",
     "!src/**/__test-helpers.ts"
   ],
