@@ -54,6 +54,9 @@ const TOOL_SCOPE_MAP: Record<string, Scope> = {
 	// Versioning tools
 	list_versions: SCOPES.READ,
 	restore_version: SCOPES.WRITE,
+	// AI-native tools
+	get_file_schema: SCOPES.READ,
+	summarize_file: SCOPES.READ,
 	// Shell tool
 	shell: SCOPES.SHELL,
 	shell_app: SCOPES.SHELL,

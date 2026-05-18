@@ -6,6 +6,7 @@ import type { AuditLogger } from "./middleware/audit.js";
 import { applyDlpWrapper, type DlpPattern } from "./middleware/dlp.js";
 import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
 import { registerResources } from "./resources/index.js";
+import { registerAiNativeTools } from "./tools/ai-native.js";
 import { registerDirectoryTools } from "./tools/directory.js";
 import { registerExtendedTools } from "./tools/extended.js";
 import { registerInfoTools } from "./tools/info.js";
@@ -247,6 +248,7 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	registerPresignedTools(server, ctx);
 	registerMetadataTools(server, ctx);
 	registerVersioningTools(server, ctx);
+	registerAiNativeTools(server, ctx);
 
 	// Read-only MCP Resources for client-side browsing
 	registerResources(server, ctx);
