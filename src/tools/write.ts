@@ -39,6 +39,7 @@ export async function handleEditFile(
 		path: string;
 		edits: Array<{ oldText: string; newText: string }>;
 		dryRun?: boolean | undefined;
+		expected_etag?: string | undefined;
 	},
 	ctx: Ctx,
 ): Promise<ToolResult> {
@@ -49,6 +50,25 @@ export async function handleEditFile(
 		const buffer = await ctx.vfs.get(root, key);
 		const original = buffer.toString("utf8");
 		let content = original;
+
+		// Optimistic concurrency: check etag before editing
+		if (args.expected_etag) {
+			const stat = await ctx.vfs.stat(root, key);
+			if (stat.etag && stat.etag !== args.expected_etag) {
+				return {
+					isError: true,
+					content: [
+						{
+							type: "text",
+							text:
+								`Conflict: file has been modified since last read. ` +
+								`Expected etag: ${args.expected_etag}, current etag: ${stat.etag}. ` +
+								`Re-read the file and retry.`,
+						},
+					],
+				};
+			}
+		}
 
 		// Apply edits sequentially
 		for (const { oldText, newText } of args.edits) {
@@ -70,8 +90,12 @@ export async function handleEditFile(
 
 		const newBuffer = Buffer.from(content, "utf8");
 		await ctx.vfs.put(root, key, newBuffer);
+		const newStat = await ctx.vfs.stat(root, key);
+		const etagInfo = newStat.etag ? ` (etag: ${newStat.etag})` : "";
 		return {
-			content: [{ type: "text", text: `Successfully edited ${args.path}` }],
+			content: [
+				{ type: "text", text: `Successfully edited ${args.path}${etagInfo}` },
+			],
 		};
 	} catch (err) {
 		return {
@@ -112,11 +136,18 @@ export function registerWriteTools(server: McpServer, ctx: Ctx): void {
 		"edit_file",
 		{
 			description:
-				"Apply text edits to a file. Each edit replaces oldText with newText. Use dryRun to preview.",
+				"Apply text edits to a file. Each edit replaces oldText with newText. Use dryRun to preview. " +
+				"Optionally pass expected_etag for optimistic concurrency control.",
 			inputSchema: z.object({
 				path: z.string(),
 				edits: z.array(z.object({ oldText: z.string(), newText: z.string() })),
 				dryRun: z.boolean().optional(),
+				expected_etag: z
+					.string()
+					.optional()
+					.describe(
+						"If provided, the edit is rejected when the current file etag does not match (conflict detection)",
+					),
 			}),
 		},
 		async (args) => handleEditFile(args, ctx),

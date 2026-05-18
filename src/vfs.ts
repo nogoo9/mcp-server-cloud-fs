@@ -5,6 +5,7 @@
 // directory index, and tombstone set on top of the backing StorageProvider.
 // All tool handlers use this as their single access point.
 
+import { createHash } from "node:crypto";
 import type { CacheStore } from "./cache/interface.js";
 import { toCacheKey } from "./path-utils.js";
 import type {
@@ -25,6 +26,8 @@ export interface VfsStat {
 	size: number;
 	lastModified: Date;
 	contentType?: string;
+	/** Content-addressable entity tag (SHA-256 hash). */
+	etag?: string;
 }
 
 // ── Persistence keys ───────────────────────────────────────────────────────
@@ -39,6 +42,7 @@ interface SerializedInode {
 	size: number;
 	lastModified: string; // ISO 8601
 	contentType?: string;
+	etag?: string;
 }
 
 function serializeInodes(
@@ -50,6 +54,7 @@ function serializeInodes(
 			size: v.size,
 			lastModified: v.lastModified.toISOString(),
 			...(v.contentType !== undefined && { contentType: v.contentType }),
+			...(v.etag !== undefined && { etag: v.etag }),
 		};
 	}
 	return out;
@@ -64,6 +69,7 @@ function deserializeInodes(
 			size: v.size,
 			lastModified: new Date(v.lastModified),
 			...(v.contentType !== undefined && { contentType: v.contentType }),
+			...(v.etag !== undefined && { etag: v.etag }),
 		});
 	}
 	return m;
@@ -373,11 +379,15 @@ export class VirtualFS {
 		await this.cache.set(ck, buffer);
 		this.cache.markDirty(ck, root, key);
 
+		// Compute content-addressable etag
+		const etag = createHash("sha256").update(buffer).digest("hex");
+
 		// Update inode overlay
 		this.inodes.set(ck, {
 			size: buffer.length,
 			lastModified: new Date(),
 			...(contentType !== undefined && { contentType }),
+			etag,
 		});
 
 		// Register in directory index

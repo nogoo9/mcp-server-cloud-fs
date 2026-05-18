@@ -37,14 +37,24 @@ export async function handleReadTextFile(
 	ctx: Ctx,
 ): Promise<ToolResult> {
 	try {
-		const { buffer } = await readWithVfs(args.path, ctx);
+		const { buffer, root, key } = await readWithVfs(args.path, ctx);
 		const text = buffer.toString("utf8");
+
+		// Fetch etag for concurrency metadata
+		let etagSuffix = "";
+		try {
+			const stat = await ctx.vfs.stat(root, key);
+			if (stat.etag) etagSuffix = `\n\n[etag: ${stat.etag}]`;
+		} catch {
+			// stat may fail for edge cases — omit etag silently
+		}
+
 		if (args.head !== undefined) {
 			return {
 				content: [
 					{
 						type: "text",
-						text: text.split("\n").slice(0, args.head).join("\n"),
+						text: text.split("\n").slice(0, args.head).join("\n") + etagSuffix,
 					},
 				],
 			};
@@ -55,12 +65,14 @@ export async function handleReadTextFile(
 				content: [
 					{
 						type: "text",
-						text: lines.slice(Math.max(0, lines.length - args.tail)).join("\n"),
+						text:
+							lines.slice(Math.max(0, lines.length - args.tail)).join("\n") +
+							etagSuffix,
 					},
 				],
 			};
 		}
-		return { content: [{ type: "text", text }] };
+		return { content: [{ type: "text", text: text + etagSuffix }] };
 	} catch (err) {
 		return {
 			isError: true,

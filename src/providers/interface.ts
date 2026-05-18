@@ -32,6 +32,8 @@ export interface ObjectInfo {
 	lastModified: Date;
 	/** MIME type, if known. */
 	contentType?: string;
+	/** Entity tag (content hash), if available. */
+	etag?: string;
 }
 
 /**
