@@ -1,6 +1,7 @@
 // src/server.ts
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shouldRegisterTool } from "./auth/scopes.js";
 import type { AuditLogger } from "./middleware/audit.js";
 import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
 import { registerResources } from "./resources/index.js";
@@ -38,6 +39,12 @@ export interface ServerContext {
 	enableShell?: boolean;
 	/** Optional audit logger for tool invocation transparency. */
 	auditLogger?: AuditLogger;
+	/**
+	 * OAuth scopes granted to the current session.
+	 * When set, only tools matching these scopes are registered.
+	 * Omit to register all tools (backwards-compatible default).
+	 */
+	grantedScopes?: string[];
 }
 
 /**
@@ -202,6 +209,19 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 					}
 				};
 			}
+			// biome-ignore lint/suspicious/noExplicitAny: calling original overloaded registerTool
+			return (original as any)(name, ...rest);
+		};
+	}
+
+	// Scope-aware tool registration: when grantedScopes is set,
+	// wrap registerTool to skip tools not matching the session's scopes.
+	if (ctx.grantedScopes) {
+		const scopes = ctx.grantedScopes;
+		const original = server.registerTool.bind(server);
+		// biome-ignore lint/suspicious/noExplicitAny: wrapping generic registerTool overloads
+		(server as any).registerTool = (name: string, ...rest: any[]) => {
+			if (!shouldRegisterTool(name, scopes)) return;
 			// biome-ignore lint/suspicious/noExplicitAny: calling original overloaded registerTool
 			return (original as any)(name, ...rest);
 		};
