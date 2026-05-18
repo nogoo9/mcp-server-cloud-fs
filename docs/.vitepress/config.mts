@@ -23,6 +23,11 @@ const architectureSidebar = [
 			{ text: "08. Multi-Provider Routing", link: "/designs/08-multi-provider-routing" },
 			{ text: "09. OIDC Managed Identity", link: "/designs/09-oidc-managed-identity" },
 			{ text: "10. Health Check UI", link: "/designs/10-health-check-ui" },
+			{ text: "11. Scope Tool Filter", link: "/designs/11-scope-tool-filter" },
+			{ text: "12. DLP Sanitization", link: "/designs/12-dlp-sanitization" },
+			{ text: "13. AI-Native Tools", link: "/designs/13-ai-native-tools" },
+			{ text: "14. ETag Concurrency", link: "/designs/14-etag-concurrency" },
+			{ text: "15. Patch File", link: "/designs/15-patch-file" },
 		],
 	},
 ];
