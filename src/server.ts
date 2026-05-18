@@ -12,6 +12,7 @@ import { registerExtendedTools } from "./tools/extended.js";
 import { registerInfoTools } from "./tools/info.js";
 import { registerMetadataTools } from "./tools/metadata.js";
 import { registerMoveTools } from "./tools/move.js";
+import { registerPatchTools } from "./tools/patch.js";
 import { registerPresignedTools } from "./tools/presigned.js";
 import { registerReadTools } from "./tools/read.js";
 import { registerSearchTools } from "./tools/search.js";
@@ -249,6 +250,7 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	registerMetadataTools(server, ctx);
 	registerVersioningTools(server, ctx);
 	registerAiNativeTools(server, ctx);
+	registerPatchTools(server, ctx);
 
 	// Read-only MCP Resources for client-side browsing
 	registerResources(server, ctx);

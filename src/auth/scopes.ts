@@ -57,6 +57,8 @@ const TOOL_SCOPE_MAP: Record<string, Scope> = {
 	// AI-native tools
 	get_file_schema: SCOPES.READ,
 	summarize_file: SCOPES.READ,
+	// Macro tools
+	patch_file: SCOPES.WRITE,
 	// Shell tool
 	shell: SCOPES.SHELL,
 	shell_app: SCOPES.SHELL,
