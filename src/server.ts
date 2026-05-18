@@ -1,14 +1,18 @@
 // src/server.ts
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { shouldRegisterTool } from "./auth/scopes.js";
 import type { AuditLogger } from "./middleware/audit.js";
+import { applyDlpWrapper, type DlpPattern } from "./middleware/dlp.js";
 import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
 import { registerResources } from "./resources/index.js";
+import { registerAiNativeTools } from "./tools/ai-native.js";
 import { registerDirectoryTools } from "./tools/directory.js";
 import { registerExtendedTools } from "./tools/extended.js";
 import { registerInfoTools } from "./tools/info.js";
 import { registerMetadataTools } from "./tools/metadata.js";
 import { registerMoveTools } from "./tools/move.js";
+import { registerPatchTools } from "./tools/patch.js";
 import { registerPresignedTools } from "./tools/presigned.js";
 import { registerReadTools } from "./tools/read.js";
 import { registerSearchTools } from "./tools/search.js";
@@ -38,6 +42,16 @@ export interface ServerContext {
 	enableShell?: boolean;
 	/** Optional audit logger for tool invocation transparency. */
 	auditLogger?: AuditLogger;
+	/**
+	 * OAuth scopes granted to the current session.
+	 * When set, only tools matching these scopes are registered.
+	 * Omit to register all tools (backwards-compatible default).
+	 */
+	grantedScopes?: string[];
+	/** Enable DLP (Data Loss Prevention) content sanitization. */
+	enableDlp?: boolean;
+	/** Custom DLP patterns. When omitted, uses built-in defaults. */
+	dlpPatterns?: DlpPattern[];
 }
 
 /**
@@ -207,6 +221,24 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 		};
 	}
 
+	// DLP: wrap registerTool to sanitize text responses before delivery.
+	if (ctx.enableDlp) {
+		applyDlpWrapper(server, ctx.dlpPatterns);
+	}
+
+	// Scope-aware tool registration: when grantedScopes is set,
+	// wrap registerTool to skip tools not matching the session's scopes.
+	if (ctx.grantedScopes) {
+		const scopes = ctx.grantedScopes;
+		const original = server.registerTool.bind(server);
+		// biome-ignore lint/suspicious/noExplicitAny: wrapping generic registerTool overloads
+		(server as any).registerTool = (name: string, ...rest: any[]) => {
+			if (!shouldRegisterTool(name, scopes)) return;
+			// biome-ignore lint/suspicious/noExplicitAny: calling original overloaded registerTool
+			return (original as any)(name, ...rest);
+		};
+	}
+
 	registerReadTools(server, ctx);
 	registerWriteTools(server, ctx);
 	registerDirectoryTools(server, ctx);
@@ -217,6 +249,8 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 	registerPresignedTools(server, ctx);
 	registerMetadataTools(server, ctx);
 	registerVersioningTools(server, ctx);
+	registerAiNativeTools(server, ctx);
+	registerPatchTools(server, ctx);
 
 	// Read-only MCP Resources for client-side browsing
 	registerResources(server, ctx);

@@ -23,6 +23,11 @@ const architectureSidebar = [
 			{ text: "08. Multi-Provider Routing", link: "/designs/08-multi-provider-routing" },
 			{ text: "09. OIDC Managed Identity", link: "/designs/09-oidc-managed-identity" },
 			{ text: "10. Health Check UI", link: "/designs/10-health-check-ui" },
+			{ text: "11. Scope Tool Filter", link: "/designs/11-scope-tool-filter" },
+			{ text: "12. DLP Sanitization", link: "/designs/12-dlp-sanitization" },
+			{ text: "13. AI-Native Tools", link: "/designs/13-ai-native-tools" },
+			{ text: "14. ETag Concurrency", link: "/designs/14-etag-concurrency" },
+			{ text: "15. Patch File", link: "/designs/15-patch-file" },
 		],
 	},
 ];
@@ -30,7 +35,7 @@ const architectureSidebar = [
 export default defineConfig({
 	title: "Cloud FS MCP Server",
 	description:
-		"Cloud replacement for mcp-server-filesystem — 27 tools for S3, Azure Blob, and GCS with OAuth 2.1, VFS, and multi-transport support",
+		"Cloud replacement for mcp-server-filesystem — 30 tools for S3, Azure Blob, and GCS with OAuth 2.1, VFS, and multi-transport support",
 	base: process.env.VITEPRESS_BASE || "/mcp-server-cloud-fs/",
 
 	lastUpdated: true,
@@ -54,7 +59,7 @@ export default defineConfig({
 			{
 				property: "og:description",
 				content:
-					"Cloud replacement for mcp-server-filesystem with 27 tools, OAuth 2.1, and multi-transport support",
+					"Cloud replacement for mcp-server-filesystem with 30 tools, OAuth 2.1, and multi-transport support",
 			},
 		],
 	],
@@ -76,7 +81,6 @@ export default defineConfig({
 					text: "Guide",
 					items: [
 						{ text: "Getting Started", link: "/guide/getting-started" },
-						{ text: "What's New in v0.6.0", link: "/guide/whats-new" },
 						{ text: "Use Cases", link: "/guide/use-cases" },
 						{ text: "Provider Setup", link: "/guide/providers" },
 						{ text: "AI Agent Skill", link: "/guide/ai-skill" },
@@ -84,6 +88,14 @@ export default defineConfig({
 						{ text: "Transports", link: "/guide/transports" },
 						{ text: "Authentication", link: "/guide/authentication" },
 						{ text: "Production Hardening", link: "/guide/production" },
+					],
+				},
+				{
+					text: "What's New",
+					collapsed: false,
+					items: [
+						{ text: "v0.7.0", link: "/guide/whats-new-v0.7.0" },
+						{ text: "v0.6.0", link: "/guide/whats-new" },
 					],
 				},
 			],

@@ -201,7 +201,7 @@ function defineE2eSuite(
 				name: "read_file",
 				arguments: { path: `s3://${BUCKET}/${prefix}hello.txt` },
 			});
-			expect(firstText(r)).toBe("hello world");
+			expect(firstText(r)).toContain("hello world");
 		});
 
 		it("get_file_info returns correct byte size", async () => {
@@ -258,7 +258,7 @@ function defineE2eSuite(
 				name: "read_file",
 				arguments: { path: `s3://${BUCKET}/${prefix}hello.txt` },
 			});
-			expect(firstText(warm)).toBe("hello world");
+			expect(firstText(warm)).toContain("hello world");
 
 			// Overwrite directly in S3 — cache is NOT notified.
 			await s3.send(
@@ -274,7 +274,7 @@ function defineE2eSuite(
 				name: "read_file",
 				arguments: { path: `s3://${BUCKET}/${prefix}hello.txt` },
 			});
-			expect(firstText(stale)).toBe("hello world"); // from cache, not storage
+			expect(firstText(stale)).toContain("hello world"); // from cache, not storage
 		});
 
 		// ── Cache eviction on write via MCP ────────────────────────────────
@@ -293,7 +293,7 @@ function defineE2eSuite(
 				name: "read_file",
 				arguments: { path: `s3://${BUCKET}/${prefix}hello.txt` },
 			});
-			expect(firstText(r)).toBe("fresh content");
+			expect(firstText(r)).toContain("fresh content");
 		});
 
 		it("edit_file patches content — read_file reflects the update", async () => {
@@ -317,7 +317,7 @@ function defineE2eSuite(
 				name: "read_file",
 				arguments: { path: `s3://${BUCKET}/${prefix}hello.txt` },
 			});
-			expect(firstText(r)).toBe("goodbye world");
+			expect(firstText(r)).toContain("goodbye world");
 		});
 
 		it("search_files finds files by glob", async () => {

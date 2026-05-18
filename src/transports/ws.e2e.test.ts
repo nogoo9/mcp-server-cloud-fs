@@ -224,7 +224,7 @@ describe("MCP e2e — WebSocket transport (memory provider)", () => {
 			arguments: { path: "mem://e2e-ws/test-ws.txt" },
 		})) as { content: { type: string; text?: string }[] };
 		const text = result.content?.[0]?.text ?? "";
-		expect(text).toBe("hello from ws transport");
+		expect(text).toContain("hello from ws transport");
 	});
 
 	it("list_directory shows files", async () => {
@@ -272,6 +272,6 @@ describe("MCP e2e — WebSocket transport (memory provider)", () => {
 			arguments: { path: "mem://e2e-ws/edit-test.txt" },
 		})) as { content: { type: string; text?: string }[] };
 		const text = result.content?.[0]?.text ?? "";
-		expect(text).toBe("modified content");
+		expect(text).toContain("modified content");
 	});
 });

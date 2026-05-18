@@ -54,6 +54,11 @@ const TOOL_SCOPE_MAP: Record<string, Scope> = {
 	// Versioning tools
 	list_versions: SCOPES.READ,
 	restore_version: SCOPES.WRITE,
+	// AI-native tools
+	get_file_schema: SCOPES.READ,
+	summarize_file: SCOPES.READ,
+	// Macro tools
+	patch_file: SCOPES.WRITE,
 	// Shell tool
 	shell: SCOPES.SHELL,
 	shell_app: SCOPES.SHELL,
@@ -83,6 +88,36 @@ export function hasScope(grantedScopes: string[], toolName: string): boolean {
 	if (!required) return false;
 
 	return grantedScopes.includes(required);
+}
+
+/**
+ * Return the list of tool names accessible with the given scopes.
+ * Admin scope returns all tools.
+ *
+ * @category Auth
+ */
+export function getToolsForScopes(grantedScopes: string[]): string[] {
+	if (grantedScopes.includes(SCOPES.ADMIN)) {
+		return Object.keys(TOOL_SCOPE_MAP);
+	}
+	return Object.entries(TOOL_SCOPE_MAP)
+		.filter(([, scope]) => grantedScopes.includes(scope))
+		.map(([name]) => name);
+}
+
+/**
+ * Check whether a tool should be registered given the granted scopes.
+ * Returns `true` when no scopes are configured (backwards-compatible).
+ *
+ * @category Auth
+ */
+export function shouldRegisterTool(
+	toolName: string,
+	grantedScopes?: string[],
+): boolean {
+	// No scope filtering configured — register everything
+	if (!grantedScopes) return true;
+	return hasScope(grantedScopes, toolName);
 }
 
 /**

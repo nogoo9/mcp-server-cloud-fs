@@ -210,6 +210,43 @@ if (!report.healthy) {
 ```
 :::
 
+## DLP Content Sanitization
+
+The Data Loss Prevention (DLP) middleware redacts sensitive content from tool responses before they reach the MCP client. This prevents accidental leakage of secrets, PII, and credentials into LLM context windows.
+
+### Default Patterns
+
+| Pattern | Label | Example Match |
+|---------|-------|---------------|
+| AWS Access Key | `AWS_KEY` | `AKIAIOSFODNN7EXAMPLE` |
+| AWS Secret Key | `AWS_SECRET` | `wJalrXUtnFEMI/K7MDENG/...` |
+| Email Address | `EMAIL` | `alice@example.com` |
+| US SSN | `SSN` | `123-45-6789` |
+| Credit Card | `CC` | `4111 1111 1111 1111` |
+| JWT Token | `JWT` | `eyJhbGciOiJI...` |
+| Generic Secret | `GENERIC_SECRET` | `password="s3cr3t"` |
+| API Key | `API_KEY` | `sk-abc123...`, `sk_live_...` |
+| Private Key | `PRIVATE_KEY` | `-----BEGIN RSA PRIVATE KEY-----` |
+
+### Usage
+
+```bash
+# Enable DLP with default patterns
+cloud-fs-mcp s3 s3://my-bucket --enable-dlp
+```
+
+All tool responses are scanned and redacted inline. The redaction count is logged for audit purposes.
+
+::: tip Programmatic Usage
+Import `sanitizeContent` and `DEFAULT_DLP_PATTERNS` from the SDK to use DLP in custom integrations:
+
+```typescript
+import { sanitizeContent, DEFAULT_DLP_PATTERNS } from "@nogoo9/mcp-server-cloud-fs/middleware/dlp";
+
+const { sanitized, redactionCount } = sanitizeContent(text, DEFAULT_DLP_PATTERNS);
+```
+:::
+
 ## DNS Rebinding Protection
 
 Automatically applied when binding to localhost addresses. Validates the `Host` header against allowed hostnames to prevent DNS rebinding attacks.

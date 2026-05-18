@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  Cloud replacement for <code>mcp-server-filesystem</code> — 27 tools for S3, Azure Blob, and GCS.<br/>
+  Cloud replacement for <code>mcp-server-filesystem</code> — 30 tools for S3, Azure Blob, and GCS.<br/>
   Deploy locally via STDIO or remotely over HTTP/WebSocket with OAuth 2.1 auth.<br/>
   Also available as an npm library and interactive TUI.
 </p>
@@ -32,13 +32,9 @@
   </a>
 </p>
 
-<p align="center">
-  <img src="docs/public/images/cloud-fs-claude-demo.svg" alt="cloud-fs in Claude Code" width="700" />
-</p>
+![cloud-fs in Claude Code](docs/public/images/cloud-fs-claude-demo.svg)
 
-<p align="center">
-  <img src="docs/public/images/cloud-fs-cli-demo.svg" alt="cloud-fs interactive shell" width="700" />
-</p>
+![cloud-fs interactive shell](docs/public/images/cloud-fs-cli-demo.svg)
 
 **Providers:** Amazon S3 · Azure Blob Storage · Google Cloud Storage · MinIO · RustFS · Cloudflare R2 · Backblaze B2 · Wasabi · LocalStack · SQLite · In-Memory
 
@@ -71,9 +67,17 @@
 
 `@nogoo9/mcp-server-cloud-fs` exposes all 14 tools defined by [`mcp-server-filesystem`](https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem) — same tool names, same parameter schemas — over cloud object storage. Drop it into any MCP client config that currently points at `mcp-server-filesystem` and your AI assistant gains read/write access to S3, Azure Blob Storage, or Google Cloud Storage buckets.
 
-It also includes **5 extended tools** inspired by [claude-code's filesystem tool surface](https://github.com/codeaashu/claude-code/tree/main/src/tools): line-range reads, byte-range chunk reads, in-process regex search (single file and multi-file), server-side copy, and opt-in deletion. Plus **6 cloud-native tools**: presigned URLs, object metadata/tags, tag-based search, version history, and version restore.
+It also includes **5 extended tools** inspired by [claude-code's filesystem tool surface](https://github.com/codeaashu/claude-code/tree/main/src/tools): line-range reads, byte-range chunk reads, in-process regex search (single file and multi-file), server-side copy, and opt-in deletion. Plus **6 cloud-native tools** (presigned URLs, object metadata/tags, tag-based search, version history, version restore), **2 AI-native tools** (schema extraction, file summarization), and **1 macro tool** (`patch_file` for atomic diffs).
 
-A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence, a **shell tool** lets you run POSIX-like commands (`ls`, `grep`, `jq`, `cat | wc`, etc.) against cloud storage, and the package is available as a **programmatic npm library**.
+A **Virtual Filesystem (VFS) layer** provides FUSE-like cache coherence with ETag-based concurrency control, a **shell tool** lets you run POSIX-like commands (`ls`, `grep`, `jq`, `cat | wc`, etc.) against cloud storage, and the package is available as a **programmatic npm library**.
+
+### v0.7.0 Highlights
+
+- **Dynamic tool surface reduction**: scope-aware tool filtering — clients only see tools they're authorized to use
+- **DLP content sanitization**: regex-based middleware redacts PII, API keys, and credentials from tool responses (`--enable-dlp`)
+- **AI-native tools**: `get_file_schema` extracts CSV/JSON structure; `summarize_file` returns compact head/tail previews
+- **ETag concurrency control**: SHA-256 content-addressable ETags with `expected_etag` conflict detection on `edit_file` and `patch_file`
+- **`patch_file` macro tool**: atomic read-diff-write in a single tool call — supports unified diffs and line-range replacements
 
 ### v0.6.0 Highlights
 
@@ -132,9 +136,7 @@ bunx @nogoo9/mcp-server-cloud-fs memory mem://demo --enable-shell --seed-demo
 
 ## Interactive Shell (`cloud-fs`)
 
-<p align="center">
-  <img src="docs/public/images/cloud-fs-cli-demo.svg" alt="cloud-fs interactive shell demo" width="700" />
-</p>
+![cloud-fs interactive shell demo](docs/public/images/cloud-fs-cli-demo.svg)
 
 Drop into an interactive terminal for exploring and managing cloud storage — no MCP client needed:
 
@@ -314,12 +316,14 @@ When auth is enabled, tool access is controlled by granular scopes:
 
 | Scope | Tools |
 |---|---|
-| `cloud-fs:read` | `read_file`, `read_text_file`, `read_media_file`, `read_multiple_files`, `read_file_range`, `read_file_chunk`, `get_presigned_url`, `get_object_metadata`, `list_versions` |
-| `cloud-fs:write` | `write_file`, `edit_file`, `create_directory`, `set_object_tags`, `restore_version` |
+| `cloud-fs:read` | `read_file`, `read_text_file`, `read_media_file`, `read_multiple_files`, `read_file_range`, `read_file_chunk`, `get_presigned_url`, `get_object_metadata`, `list_versions`, `get_file_schema`, `summarize_file` |
+| `cloud-fs:write` | `write_file`, `edit_file`, `create_directory`, `set_object_tags`, `restore_version`, `patch_file` |
 | `cloud-fs:delete` | `delete_file` |
 | `cloud-fs:search` | `search_files`, `grep_file`, `grep_files`, `list_directory`, `list_directory_with_sizes`, `directory_tree`, `search_by_tag` |
 | `cloud-fs:shell` | `shell` |
 | `cloud-fs:admin` | All tools + `get_file_info`, `list_allowed_directories` |
+
+When `grantedScopes` is set (via OAuth tokens), tools outside the granted scopes are **not registered** — they don't appear in `tools/list` at all, reducing LLM prompt token waste and preventing tool hallucination.
 
 Tokens with insufficient scopes receive a clear error response indicating which scope is required.
 
@@ -484,6 +488,7 @@ cloud-fs-mcp <provider> <root-uri> [root-uri...] [options]
 |---|---|---|
 | `--enable-delete` | `false` | Enable the `delete_file` tool |
 | `--enable-shell` | `false` | Enable the `shell` tool |
+| `--enable-dlp` | `false` | Enable DLP content sanitization (redacts PII/secrets from responses) |
 | `--grep-max-objects <n>` | `1000` | Max objects `grep_files` scans per call |
 | `--seed-demo` | `false` | Seed VFS with sample files for demo |
 
@@ -645,7 +650,7 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | Tool | Parameters | Description |
 |---|---|---|
 | `write_file` | `path`, `content` | Write/overwrite a file. Flushed after debounce window. |
-| `edit_file` | `path`, `edits[]`, `dryRun?` | Apply `{ oldText, newText }` edits. Preview with `dryRun`. |
+| `edit_file` | `path`, `edits[]`, `dryRun?`, `expected_etag?` | Apply `{ oldText, newText }` edits. Preview with `dryRun`. Optional ETag conflict detection. |
 
 ### Directory tools
 
@@ -693,6 +698,23 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | `restore_version` ☁️ | `path`, `version_id` | Restore a previous object version (copies over current). |
 
 > ☁️ = Cloud-native tool (requires provider support)
+
+### AI-native tools 🧠
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `get_file_schema` 🧠 | `path` | Extract structural schema: CSV column names/types/samples, JSON shape, or text line/byte counts. |
+| `summarize_file` 🧠 | `path`, `max_lines?` | Compact head/tail preview with file size, line count, and content type. |
+
+> 🧠 = AI-native tool (reduces LLM context token waste)
+
+### Macro tools 🩹
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `patch_file` 🩹 | `path`, `patch`, `format?`, `expected_etag?` | Apply unified diffs or line-range replacements atomically in a single tool call. |
+
+> 🩹 = Macro tool (combines read + transform + write)
 
 ### Shell tool ⚡
 
@@ -904,9 +926,7 @@ HTTP E2E tests use the in-memory provider and need zero infrastructure, making t
 
 ## AI Agent Skill
 
-<p align="center">
-  <img src="docs/public/images/cloud-fs-claude-demo.svg" alt="cloud-fs skill in action" width="700" />
-</p>
+![cloud-fs skill in action](docs/public/images/cloud-fs-claude-demo.svg)
 
 The `skills/cloud-fs` directory contains an installable AI agent skill that teaches coding assistants (Claude Code, Gemini CLI, etc.) how to use cloud-fs as a POSIX-like virtual filesystem. Install it to give your assistant fluency with cloud storage commands.
 

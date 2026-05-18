@@ -6,13 +6,13 @@
     "url": "https://github.com/nogoo9/mcp-server-cloud-fs",
     "source": "github"
   },
-  "version": "0.6.0",
+  "version": "0.7.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@nogoo9/mcp-server-cloud-fs",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "runtimeHint": "bunx",
       "transport": {
         "type": "stdio"

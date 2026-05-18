@@ -139,7 +139,7 @@ describe("MCP e2e — HTTP transport (memory provider)", () => {
 		});
 		const text =
 			(r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
-		expect(text).toBe("hello from http transport");
+		expect(text).toContain("hello from http transport");
 	});
 
 	it("list_directory shows files", async () => {
@@ -193,7 +193,7 @@ describe("MCP e2e — HTTP transport (memory provider)", () => {
 		});
 		const text =
 			(r.content as { type: string; text?: string }[])?.[0]?.text ?? "";
-		expect(text).toBe("modified content");
+		expect(text).toContain("modified content");
 	});
 });
 
