@@ -3,6 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { shouldRegisterTool } from "./auth/scopes.js";
 import type { AuditLogger } from "./middleware/audit.js";
+import { applyDlpWrapper, type DlpPattern } from "./middleware/dlp.js";
 import type { ParsedRoot, StorageProvider } from "./providers/interface.js";
 import { registerResources } from "./resources/index.js";
 import { registerDirectoryTools } from "./tools/directory.js";
@@ -45,6 +46,10 @@ export interface ServerContext {
 	 * Omit to register all tools (backwards-compatible default).
 	 */
 	grantedScopes?: string[];
+	/** Enable DLP (Data Loss Prevention) content sanitization. */
+	enableDlp?: boolean;
+	/** Custom DLP patterns. When omitted, uses built-in defaults. */
+	dlpPatterns?: DlpPattern[];
 }
 
 /**
@@ -212,6 +217,11 @@ export async function createMcpServer(ctx: ServerContext): Promise<McpServer> {
 			// biome-ignore lint/suspicious/noExplicitAny: calling original overloaded registerTool
 			return (original as any)(name, ...rest);
 		};
+	}
+
+	// DLP: wrap registerTool to sanitize text responses before delivery.
+	if (ctx.enableDlp) {
+		applyDlpWrapper(server, ctx.dlpPatterns);
 	}
 
 	// Scope-aware tool registration: when grantedScopes is set,

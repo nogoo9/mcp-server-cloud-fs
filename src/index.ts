@@ -72,6 +72,7 @@ Storage & Cache:
 Tools:
   --enable-delete                Enable the delete_file tool (disabled by default)
   --enable-shell                 Enable the shell tool (disabled by default)
+  --enable-dlp                   Enable DLP content sanitization (redacts PII/secrets from responses)
   --grep-max-objects <n>         Max objects grep_files will scan per call (default: 1000)
   --seed-demo                    Seed the VFS with sample files for demo / exploration
 
@@ -119,6 +120,8 @@ interface CliArgs {
 	// v1.0.0 — audit
 	auditLog: boolean;
 	auditLogFile?: string;
+	// v0.7.0 — DLP
+	enableDlp: boolean;
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -144,6 +147,7 @@ function parseArgs(argv: string[]): CliArgs {
 	let sqliteDb: string | undefined;
 	let seedDemo = false;
 	let caFile: string | undefined;
+	let enableDlp = false;
 
 	// v0.4.0 — transport & production flags
 	let transport: TransportType = "stdio";
@@ -212,6 +216,8 @@ function parseArgs(argv: string[]): CliArgs {
 			sqliteDb = args[++i];
 		} else if (arg === "--seed-demo") {
 			seedDemo = true;
+		} else if (arg === "--enable-dlp") {
+			enableDlp = true;
 			// v0.4.0 — transport & production flags
 		} else if (arg === "--transport") {
 			const val = args[++i];
@@ -344,6 +350,8 @@ function parseArgs(argv: string[]): CliArgs {
 		...(securityHeadersOptions !== undefined && { securityHeadersOptions }),
 		// v0.4.1
 		...(caFile !== undefined && { caFile }),
+		// v0.7.0
+		enableDlp,
 	};
 }
 
@@ -699,6 +707,7 @@ async function main(): Promise<void> {
 		enableDelete: args.enableDelete,
 		grepMaxObjects: args.grepMaxObjects,
 		enableShell: args.enableShell,
+		enableDlp: args.enableDlp,
 		...(auditLogger !== undefined && { auditLogger }),
 	});
 
