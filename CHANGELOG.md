@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.0] — 2026-05-18
+
+### Added
+
+- **Dynamic tool surface reduction** — when `grantedScopes` is provided in `ServerContext`, only tools matching the session's OAuth scopes are registered. Read-only clients no longer see `write_file`, `delete_file`, or `shell` in `tools/list`, reducing prompt token overhead and preventing tool hallucination. Backwards-compatible: omitting scopes registers all tools. (#22)
+- **DLP content sanitization middleware** — opt-in regex-based redaction of sensitive content (AWS keys, emails, SSN, credit cards, JWTs, API keys) from tool responses before they reach the MCP client. Ships 9 default patterns. Enabled via `--enable-dlp` CLI flag. (#23)
+- **AI-native tools** — two new tools that extract structural metadata server-side to reduce LLM context token waste (#24):
+  - `get_file_schema` — for CSV: column names, inferred types, sample values, row count; for JSON: root type, keys, shapes; for text: line/byte counts
+  - `summarize_file` — compact head/tail summary with size, line count, and content type without full file reads
+- **Optimistic concurrency control (ETags)** — SHA-256 content-addressable ETags computed on every `put()` and persisted in the inode overlay. `edit_file` accepts an optional `expected_etag` parameter for conflict detection. `read_text_file` includes the etag in response metadata. (#25)
+- **`patch_file` macro tool** — apply unified diffs or line-range replacements atomically in a single tool call, combining the read→transform→write workflow. Supports optional `expected_etag` for concurrency safety. (#26)
+
+### Changed
+
+- `VfsStat` and `ObjectInfo` interfaces extended with optional `etag` field
+- `read_text_file` responses now include `[etag: <hash>]` metadata suffix
+- `edit_file` responses now include the new etag on success
+- E2E test assertions updated to accommodate etag metadata in read responses
+- Scope filter helpers (`getToolsForScopes`, `shouldRegisterTool`) exported from `src/auth/scopes.ts`
+
 ## [0.6.0] — 2026-05-15
 
 ### Added
