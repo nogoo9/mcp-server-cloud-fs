@@ -83,6 +83,7 @@ It supports all the same **Storage & Cache** and **TLS** flags as `cloud-fs-mcp`
 |---|---|---|
 | `--enable-delete` | `false` | Enable the `delete_file` tool |
 | `--enable-shell` | `false` | Enable the `shell` tool |
+| `--enable-dlp` | `false` | Enable DLP content sanitization (redacts secrets/PII from tool responses) |
 | `--grep-max-objects <n>` | `1000` | Max objects `grep_files` scans per call |
 
 ## TLS & Custom CA

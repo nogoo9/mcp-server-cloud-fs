@@ -80,6 +80,10 @@ Check that every MCP tool registered in `src/server.ts` appears in `docs/referen
 
 Add missing entries.
 
+### What's New Pages
+
+"What's New" pages are **additive** — each release gets its own page (e.g., `whats-new-v0.7.0.md`). Do **not** overwrite or remove previous What's New pages. In the sidebar config (`docs/.vitepress/config.mts`), all What's New pages are grouped under a collapsible **"What's New"** section, with the latest version listed first.
+
 ## Step 6 — Verify the VitePress build
 
 ```bash

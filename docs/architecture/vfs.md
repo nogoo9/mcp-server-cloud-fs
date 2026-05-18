@@ -45,6 +45,27 @@ This allows `list_directory` to return newly created files immediately, even bef
 
 When a file is deleted, a tombstone marker prevents it from reappearing via provider listing or cache reads. Tombstones are cleared once the delete propagates to the provider.
 
+### ETags
+
+Every `put()` operation computes a SHA-256 hash of the content and stores it as an ETag in the inode overlay. ETags enable **optimistic concurrency control** for multi-agent workflows:
+
+- `stat()` returns the ETag for any file with a cached inode
+- `read_text_file` includes the ETag in response metadata (`[etag: <hash>]`)
+- `edit_file` and `patch_file` accept an optional `expected_etag` parameter:
+  - **Matching ETag** → operation proceeds normally
+  - **Mismatching ETag** → conflict error with the current ETag returned
+  - **Omitted** → backwards-compatible, no check performed
+
+This allows multiple agents to safely coordinate writes without locking:
+
+```
+Agent A: read_text_file → gets content + etag "abc123"
+Agent B: read_text_file → gets content + etag "abc123"
+Agent A: edit_file(expected_etag="abc123") → succeeds, new etag "def456"
+Agent B: edit_file(expected_etag="abc123") → CONFLICT! etag is now "def456"
+Agent B: re-reads file, resolves conflict, retries
+```
+
 ## Persistence
 
 VFS metadata is persisted to the CacheStore under `__vfs__/*` keys. On startup, `VirtualFS.hydrate()` restores state; corrupted data is silently discarded. This allows the VFS to survive process restarts when using a persistent cache backend (filesystem or Redis).

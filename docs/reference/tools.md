@@ -7,7 +7,7 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | Tool | Parameters | Description |
 |---|---|---|
 | `read_file` | `path` | Read a file. Binary → base64; text → UTF-8. |
-| `read_text_file` | `path`, `head?`, `tail?` | Read text file with optional head/tail line limits. |
+| `read_text_file` | `path`, `head?`, `tail?` | Read text file with optional head/tail line limits. Returns ETag in metadata. |
 | `read_media_file` | `path` | Read image/media as base64 MCP image content block. |
 | `read_multiple_files` | `paths` | Read several files in parallel. |
 | `read_file_range` ✨ | `path`, `offset`, `limit` | Read a 1-based line range with total line count header. |
@@ -18,7 +18,7 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | Tool | Parameters | Description |
 |---|---|---|
 | `write_file` | `path`, `content` | Write/overwrite a file. Flushed after debounce window. |
-| `edit_file` | `path`, `edits[]`, `dryRun?` | Apply `{ oldText, newText }` edits. Preview with `dryRun`. |
+| `edit_file` | `path`, `edits[]`, `dryRun?`, `expected_etag?` | Apply `{ oldText, newText }` edits. Preview with `dryRun`. Optional ETag conflict detection. |
 
 ## Directory Tools
 
@@ -54,6 +54,15 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 
 > ✨ = Extended tool (not in standard mcp-server-filesystem)
 
+## AI-Native Tools 🧠
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `get_file_schema` 🧠 | `path` | Extract structural schema: CSV column names/types/samples, JSON shape, or text line/byte counts. |
+| `summarize_file` 🧠 | `path` | Compact head/tail preview with file size, line count, and content type. |
+
+> 🧠 = AI-native tool (reduces LLM context token waste)
+
 ## Cloud-Native Tools ☁️
 
 | Tool | Parameters | Description |
@@ -66,6 +75,21 @@ All paths are cloud URIs — e.g. `s3://my-bucket/path/to/file.txt`. The server 
 | `restore_version` ☁️ | `path`, `version_id` | Restore a previous object version (copies over current). |
 
 > ☁️ = Cloud-native tool (requires provider support)
+
+## Macro Tools 🩹
+
+| Tool | Parameters | Description |
+|---|---|---|
+| `patch_file` 🩹 | `path`, `patch`, `format?`, `expected_etag?` | Apply unified diffs or line-range replacements atomically in a single tool call. |
+
+Two patch formats are supported:
+
+| Format | Syntax | Best for |
+|--------|--------|----------|
+| `unified` (default) | Standard `@@ -1,3 +1,3 @@` hunks | Multi-hunk diffs |
+| `line_replace` | `startLine:endLine` followed by replacement text | Simple line-range replacements |
+
+> 🩹 = Macro tool (combines multiple operations into one tool call)
 
 ## Shell Tool ⚡
 
